@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import { getMatchStatusClass } from "@/lib/skillproof";
 import type { MatchStatus } from "@/types/skillproof";
 
-export function BrowserFrame({ children }: { children: ReactNode }) {
+export function BrowserFrame({
+  children,
+  url = "skillproof.my/demo/proofs"
+}: {
+  children: ReactNode;
+  url?: string;
+}) {
   return (
     <div className="overflow-hidden rounded-[8px] border border-hairline bg-canvas shadow-panel">
       <div className="flex items-center gap-3 border-b border-hairline bg-[#151515] px-5 py-3 text-white">
@@ -12,7 +18,7 @@ export function BrowserFrame({ children }: { children: ReactNode }) {
           <span className="h-3 w-3 rounded-full bg-[#28c840]" />
         </div>
         <div className="mx-auto w-full max-w-md rounded-[8px] bg-white/10 px-4 py-1 text-center text-xs text-white/80">
-          skillproof.my/app/proofs
+          {url}
         </div>
       </div>
       {children}

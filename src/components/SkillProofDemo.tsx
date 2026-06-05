@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Bell,
   BriefcaseBusiness,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
   Database,
@@ -17,7 +16,6 @@ import {
   Pencil,
   Plus,
   Search,
-  ShieldCheck,
   Sparkles,
   Users
 } from "lucide-react";
@@ -26,19 +24,6 @@ import { applicationPacks, experiences as seededExperiences, jobs, switchLensFra
 import { getApplicationPack, getCoverageCounts, getExperience, getJob, getLensFrame, getRequirement } from "@/lib/skillproof";
 import type { ExperienceCard, SkillProofCard } from "@/types/skillproof";
 import { BrowserFrame, Panel, SectionHeader, SourceChip, StatusBadge, Tag } from "@/components/ui";
-
-const navItems = [
-  ["How it works", "#workspace"],
-  ["Proof cards", "#proofs"],
-  ["Resume", "#resume"],
-  ["Recruiter review", "#recruiter"]
-];
-
-const landingSignals: Array<[string, string, LucideIcon]> = [
-  ["Proof-first", "Every claim starts with evidence.", ShieldCheck],
-  ["Aligned", "Mapped to job requirements.", GraduationCap],
-  ["Defensible", "Ready to explain and stand by.", CheckCircle2]
-];
 
 export default function SkillProofDemo() {
   const [selectedJobId, setSelectedJobId] = useState(jobs[0].id);
@@ -71,10 +56,8 @@ export default function SkillProofDemo() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-canvas text-ink">
-      <Landing />
-
-      <section id="workspace" className="px-4 py-10 md:px-8 md:py-16">
-        <BrowserFrame>
+      <section id="workspace" className="px-4 py-6 md:px-8 md:py-10">
+        <BrowserFrame url="skillproof.my/demo/workspace">
           <AppTopNav />
           <div className="grid min-h-[760px] grid-cols-1 lg:grid-cols-[238px_minmax(0,1fr)]">
             <SideRail />
@@ -104,7 +87,7 @@ export default function SkillProofDemo() {
       </section>
 
       <section id="proofs" className="px-4 pb-10 md:px-8 md:pb-16">
-        <BrowserFrame>
+        <BrowserFrame url="skillproof.my/demo/proofs">
           <AppTopNav active="Proofs" />
           <SkillProofCards
             cards={pack.skillProofCards}
@@ -129,117 +112,6 @@ export default function SkillProofDemo() {
         <RecruiterReview selectedJobId={selectedJobId} pack={pack} />
       </section>
     </main>
-  );
-}
-
-function Landing() {
-  return (
-    <section className="px-4 py-5 md:px-8">
-      <div className="mx-auto max-w-[1480px]">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-5">
-          <a className="font-serif text-3xl font-semibold" href="#">
-            SkillProof
-          </a>
-          <nav className="hidden items-center gap-9 text-sm md:flex">
-            {navItems.map(([label, href]) => (
-              <a key={label} className="hover:text-oxblood" href={href}>
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="hidden items-center gap-4 sm:flex">
-            <a className="hidden text-sm md:inline" href="#workspace">
-              Log in
-            </a>
-            <a
-              className="shrink-0 rounded-[5px] bg-oxblood px-4 py-3 text-sm font-medium text-white hover:bg-oxblood-dark sm:px-5"
-              href="#workspace"
-            >
-              <span className="hidden sm:inline">Start building proof</span>
-              <span className="sm:hidden">Start proof</span>
-            </a>
-          </div>
-        </div>
-
-        <div className="grid gap-10 py-14 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:py-20">
-          <div className="min-w-0">
-            <h1 className="max-w-[340px] font-serif text-[54px] leading-[0.9] tracking-normal sm:max-w-none sm:text-[72px] md:text-[132px]">SkillProof</h1>
-            <p className="mt-7 max-w-[340px] font-serif text-[28px] leading-tight sm:max-w-xl sm:text-4xl md:text-5xl">
-              Turn student experience into <span className="text-oxblood">proof-backed</span> resume claims
-            </p>
-            <div className="my-8 h-px w-20 bg-oxblood" />
-            <p className="max-w-[340px] text-base leading-7 text-graphite sm:max-w-lg sm:text-lg sm:leading-8">
-              Build verifiable claims from coursework, part-time work, and campus activities. Show the source, match it to real requirements, and prepare the defense before interview.
-            </p>
-            <div className="mt-10 grid gap-5 sm:grid-cols-3">
-              {landingSignals.map(([title, copy, Icon]) => (
-                <div key={String(title)} className="flex gap-3">
-                  <Icon className="mt-1 h-6 w-6 text-oxblood" />
-                  <div>
-                    <p className="font-serif text-lg">{title}</p>
-                    <p className="text-sm leading-5 text-graphite">{copy}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <a
-              className="mt-10 inline-flex w-full max-w-sm items-center justify-between rounded-[5px] bg-oxblood px-6 py-5 font-serif text-xl text-white hover:bg-oxblood-dark"
-              href="#workspace"
-            >
-              Start building proof <ChevronRight className="h-5 w-5" />
-            </a>
-          </div>
-
-          <div className="min-w-0">
-            <div className="mb-7 flex items-end justify-between border-b border-oxblood pb-3">
-              <p className="font-serif text-xl">The SkillProof System</p>
-              <p className="hidden text-sm text-graphite sm:block">Four steps from experience to employability</p>
-            </div>
-            <div className="grid gap-5 md:grid-cols-4">
-              {[
-                ["1", "Claim", "What you achieved", "Improved onboarding completion rate by 28%", ["Project: CampusBuddy", "Role: Product Analyst"]],
-                ["2", "Proof", "The evidence behind it", "Dashboard screenshot\nA/B test notes\nStakeholder feedback", ["Data", "Artifact"]],
-                ["3", "Requirement", "What it is measured against", "Demonstrate ability to use data to drive decisions.", ["Job role", "Core competency"]],
-                ["4", "Defense", "Why it holds up", "Methodology is valid\nData is credible\nImpact is measurable", ["Explain", "Justify"]]
-              ].map(([number, title, subtitle, body, chips]) => (
-                <Panel key={String(title)} className="p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-oxblood text-sm font-semibold text-white">
-                      {number}
-                    </span>
-                    <div>
-                      <p className="font-serif text-2xl">{title}</p>
-                      <p className="text-xs text-graphite">{subtitle}</p>
-                    </div>
-                  </div>
-                  <div className="mt-7 rounded-[6px] border border-hairline bg-white/62 p-4">
-                    <p className="whitespace-pre-line text-sm font-medium leading-6">{body}</p>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {(chips as string[]).map((chip) => (
-                        <Tag key={chip}>{chip}</Tag>
-                      ))}
-                    </div>
-                  </div>
-                </Panel>
-              ))}
-            </div>
-            <Panel className="mt-8 grid gap-5 p-6 md:grid-cols-4">
-              {[
-                ["Resume-ready claims", "Export concise claims with proof links you can share."],
-                ["You control your proof", "Your data, your evidence, share only what you choose."],
-                ["Built for Malaysia", "Designed for local students, universities, and employers."],
-                ["From campus to career", "Bridge what you have done and what employers need."]
-              ].map(([title, copy]) => (
-                <div key={title} className="border-hairline md:border-r md:pr-5 last:md:border-r-0">
-                  <p className="font-serif text-lg">{title}</p>
-                  <p className="mt-2 text-sm leading-6 text-graphite">{copy}</p>
-                </div>
-              ))}
-            </Panel>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
