@@ -42,6 +42,18 @@
       "sourceType": "github",
       "skillPath": "skills/imagegen-frontend-web/SKILL.md",
       "computedHash": "65f5ae59fa317567809438310b1c54f78cd133426deb43e4d3d4ca4c8f541628"
+    },
+    "repo-illustrations": {
+      "source": "lapsapthong-16/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/repo-illustrations/SKILL.md",
+      "computedHash": "b0d87a8ac70c7642de52a799a567db07afcf64cbe1c79e5558cca9a5b1a60c54"
+    },
+    "repo-readme-writer": {
+      "source": "lapsapthong-16/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/repo-readme-writer/SKILL.md",
+      "computedHash": "abb9ca065bd5053686ce1177bc34804dc9724666ce1d91916cdaaaee870b9b70"
     }
   }
 }
