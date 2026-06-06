@@ -1,29 +1,41 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Bell,
-  BriefcaseBusiness,
-  ChevronRight,
+  CheckCircle2,
   ClipboardList,
   Database,
   FileText,
   Filter,
-  GraduationCap,
   LineChart,
-  Lock,
   MessageCircleQuestion,
   Pencil,
   Plus,
   Search,
   Sparkles,
-  Users
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { applicationPacks, experiences as seededExperiences, jobs, switchLensFrames } from "@/lib/demoData";
 import { getApplicationPack, getCoverageCounts, getExperience, getJob, getLensFrame, getRequirement } from "@/lib/skillproof";
 import type { ExperienceCard, SkillProofCard } from "@/types/skillproof";
-import { BrowserFrame, Panel, SectionHeader, SourceChip, StatusBadge, Tag } from "@/components/ui";
+import { Panel, SectionHeader, SourceChip, StatusBadge, Tag } from "@/components/ui";
+
+const storySteps: Array<[string, string, string]> = [
+  ["01", "Start with weak evidence", "The student writes what they actually remember, not polished resume language."],
+  ["02", "Pick the target role", "SkillProof reads the employer's requirements before it rewrites anything."],
+  ["03", "Build a claim chain", "Every resume bullet keeps its source proof, matched requirement, and defense question attached."],
+  ["04", "Review without scoring", "Recruiters see evidence links and gaps, not fake readiness percentages."]
+];
+
+const quickLinks = [
+  ["Story", "#story"],
+  ["Workspace", "#workspace"],
+  ["Claim chain", "#claim-chain"],
+  ["Proof library", "#proof-library"],
+  ["Recruiter", "#recruiter"]
+];
 
 export default function SkillProofDemo() {
   const [selectedJobId, setSelectedJobId] = useState(jobs[0].id);
@@ -56,49 +68,59 @@ export default function SkillProofDemo() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-canvas text-ink">
-      <section id="workspace" className="px-4 py-6 md:px-8 md:py-10">
-        <BrowserFrame url="skillproof.my/demo/workspace">
-          <AppTopNav />
-          <div className="grid min-h-[760px] grid-cols-1 lg:grid-cols-[238px_minmax(0,1fr)]">
-            <SideRail />
-            <div className="space-y-10 px-5 py-8 md:px-8">
-              <Workspace
-                draftExperiences={draftExperiences}
-                updateExperience={updateExperience}
-                selectedJobId={selectedJobId}
-                selectJob={selectJob}
-                job={job}
-                pack={pack}
-                coverageCounts={coverageCounts}
-              />
-              <ClaimProofChain
-                pack={pack}
-                selectedClaimId={selectedClaimId}
-                setSelectedClaimId={setSelectedClaimId}
-                selectedBullet={selectedBullet}
-                selectedExperience={selectedExperience}
-                selectedRequirement={selectedRequirement}
-                selectedChain={selectedChain}
-              />
-              <BeforeAfter pack={pack} selectedJobTitle={job.title} />
-            </div>
-          </div>
-        </BrowserFrame>
+      <AppTopNav />
+      <section className="px-4 pb-10 pt-6 md:px-8 md:pb-12">
+        <div className="mx-auto max-w-[1480px] overflow-hidden rounded-[8px] border border-hairline bg-white/46 shadow-panel">
+          <StoryHero
+            job={job}
+            pack={pack}
+            selectedBullet={selectedBullet}
+            selectedExperience={selectedExperience}
+            selectedRequirement={selectedRequirement}
+          />
+          <StoryRail />
+        </div>
       </section>
 
-      <section id="proofs" className="px-4 pb-10 md:px-8 md:pb-16">
-        <BrowserFrame url="skillproof.my/demo/proofs">
-          <AppTopNav active="Proofs" />
-          <SkillProofCards
+      <section id="workspace" className="px-4 pb-10 md:px-8">
+        <div className="mx-auto grid max-w-[1480px] gap-6 xl:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)]">
+          <StudentInputPanel draftExperiences={draftExperiences} updateExperience={updateExperience} />
+          <RolePanel job={job} selectedJobId={selectedJobId} selectJob={selectJob} coverageCounts={coverageCounts} pack={pack} />
+        </div>
+      </section>
+
+      <section id="claim-chain" className="px-4 pb-10 md:px-8">
+        <div className="mx-auto max-w-[1480px]">
+          <ClaimProofChain
+            pack={pack}
+            selectedClaimId={selectedClaimId}
+            setSelectedClaimId={setSelectedClaimId}
+            selectedBullet={selectedBullet}
+            selectedExperience={selectedExperience}
+            selectedRequirement={selectedRequirement}
+            selectedChain={selectedChain}
+          />
+        </div>
+      </section>
+
+      <section id="resume" className="px-4 pb-10 md:px-8">
+        <div className="mx-auto max-w-[1480px]">
+          <BeforeAfter pack={pack} selectedJobTitle={job.title} />
+        </div>
+      </section>
+
+      <section id="proof-library" className="px-4 pb-10 md:px-8">
+        <div className="mx-auto max-w-[1480px]">
+          <ProofLibrary
             cards={pack.skillProofCards}
             selectedProof={selectedProof}
             setSelectedProofId={setSelectedProofId}
             selectedJobId={selectedJobId}
           />
-        </BrowserFrame>
+        </div>
       </section>
 
-      <section id="resume" className="px-4 pb-10 md:px-8 md:pb-16">
+      <section id="interrogation" className="px-4 pb-10 md:px-8">
         <InterrogationAndLens
           pack={pack}
           lensFrame={lensFrame}
@@ -115,202 +137,267 @@ export default function SkillProofDemo() {
   );
 }
 
-function AppTopNav({ active = "Dashboard" }: { active?: string }) {
-  const items = ["Dashboard", "Proofs", "Resume", "Applications", "Roadmap"];
+function AppTopNav() {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-5 border-b border-hairline bg-canvas px-5 py-5 md:px-8">
-      <div className="font-serif text-3xl font-semibold">SkillProof</div>
-      <nav className="flex flex-wrap gap-6 text-sm">
-        {items.map((item) => (
-          <a
-            href={item === "Proofs" ? "#proofs" : item === "Resume" ? "#resume" : "#workspace"}
-            className={item === active ? "border-b-2 border-oxblood pb-2 text-oxblood" : "pb-2 text-ink"}
-            key={item}
-          >
-            {item}
-          </a>
+    <header className="sticky top-0 z-20 border-b border-hairline bg-canvas/92 px-4 backdrop-blur md:px-8">
+      <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-5 py-5">
+        <a className="font-serif text-3xl font-semibold" href="/">
+          SkillProof
+        </a>
+        <nav className="flex flex-wrap gap-4 text-sm md:gap-6">
+          {quickLinks.map(([label, href]) => (
+            <a key={label} href={href} className="rounded-[5px] px-1 py-2 text-graphite transition hover:text-oxblood">
+              {label}
+            </a>
+          ))}
+        </nav>
+        <div className="flex items-center gap-4">
+          <Bell className="h-5 w-5 text-graphite" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-ink text-xs font-semibold text-white">AM</span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function StoryHero({
+  job,
+  pack,
+  selectedBullet,
+  selectedExperience,
+  selectedRequirement
+}: {
+  job: ReturnType<typeof getJob>;
+  pack: ReturnType<typeof getApplicationPack>;
+  selectedBullet: ReturnType<typeof getApplicationPack>["proofBackedBullets"][number];
+  selectedExperience: ExperienceCard;
+  selectedRequirement: ReturnType<typeof getRequirement>;
+}) {
+  return (
+    <section id="story" className="grid gap-8 px-5 py-8 md:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:py-12">
+      <div className="flex min-h-[560px] flex-col justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Guided product story</p>
+          <h1 className="mt-4 max-w-4xl font-serif text-[52px] leading-[0.92] md:text-[86px]">
+            Stop asking students to sound employable from memory.
+          </h1>
+          <p className="mt-7 max-w-xl text-lg leading-8 text-graphite">
+            SkillProof starts with ordinary student experience, checks it against a target role, and only generates claims that can be traced back to proof.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-3 sm:grid-cols-3">
+          <Metric label="Target role" value={job.title} />
+          <Metric label="Proof cards" value={String(pack.skillProofCards.length)} />
+          <Metric label="First source" value={selectedExperience.sourceType} />
+        </div>
+      </div>
+
+      <div className="grid content-start gap-4">
+        <div className="rounded-[8px] border border-hairline bg-white/70 p-5 shadow-panel">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">The transformation</p>
+          <div className="mt-5 grid gap-4 lg:grid-cols-[0.84fr_1.16fr]">
+            <div className="rounded-[6px] border border-hairline bg-canvas p-4">
+              <p className="text-xs font-semibold text-graphite">Student starts with</p>
+              <p className="mt-4 font-serif text-3xl leading-tight">{selectedExperience.messyWording}</p>
+              <p className="mt-5 text-sm leading-6 text-graphite">
+                This is honest, but too vague for a recruiter and too weak for an interview.
+              </p>
+            </div>
+            <div className="rounded-[6px] border border-oxblood bg-white p-4">
+              <p className="text-xs font-semibold text-oxblood">SkillProof turns it into</p>
+              <p className="mt-4 text-lg font-semibold leading-7">{selectedBullet.text}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <SourceChip>{selectedExperience.title}</SourceChip>
+                <SourceChip>{selectedRequirement.label}</SourceChip>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Panel className="p-5">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Explanation icon={ClipboardList} title="No blind rewrite" copy="The app keeps the weak original visible." />
+            <Explanation icon={LineChart} title="No vague matching" copy="Each claim maps to one employer requirement." />
+            <Explanation icon={MessageCircleQuestion} title="No fake certainty" copy="Missing proof becomes a question, not a score." />
+          </div>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function StoryRail() {
+  return (
+    <section className="border-t border-hairline bg-white/45 px-5 py-5 md:px-8">
+      <div className="grid gap-3 lg:grid-cols-4">
+        {storySteps.map(([number, title, copy]) => (
+          <div key={number} className="rounded-[6px] border border-hairline bg-canvas p-4">
+            <p className="font-mono text-xs text-oxblood">{number}</p>
+            <p className="mt-3 font-serif text-xl">{title}</p>
+            <p className="mt-2 text-sm leading-6 text-graphite">{copy}</p>
+          </div>
         ))}
-      </nav>
-      <div className="flex items-center gap-4">
-        <Bell className="h-5 w-5" />
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">AM</span>
+      </div>
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-t border-hairline pt-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-graphite">{label}</p>
+      <p className="mt-2 font-serif text-2xl leading-tight">{value}</p>
+    </div>
+  );
+}
+
+function Explanation({ icon: Icon, title, copy }: { icon: LucideIcon; title: string; copy: string }) {
+  return (
+    <div className="flex gap-3">
+      <Icon className="mt-1 h-5 w-5 shrink-0 text-oxblood" />
+      <div>
+        <p className="font-serif text-xl">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-graphite">{copy}</p>
       </div>
     </div>
   );
 }
 
-function SideRail() {
-  const categories: Array<[string, string, LucideIcon]> = [
-    ["All proof", "24", ClipboardList],
-    ["Projects", "8", BriefcaseBusiness],
-    ["Internships", "5", Lock],
-    ["Coursework", "4", FileText],
-    ["Competitions", "3", GraduationCap],
-    ["Volunteering", "2", Users]
-  ];
-
-  return (
-    <aside className="border-b border-hairline p-4 lg:border-b-0 lg:border-r">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-graphite">Evidence</p>
-      <div className="space-y-1">
-        {categories.map(([label, count, Icon], index) => (
-          <a
-            href="#proofs"
-            key={String(label)}
-            className={`flex items-center justify-between rounded-[6px] px-3 py-2 text-sm ${
-              index === 0 ? "bg-oxblood text-white" : "hover:bg-white/70"
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Icon className="h-4 w-4" /> {label}
-            </span>
-            <span>{count}</span>
-          </a>
-        ))}
-      </div>
-      <div className="mt-7 border-t border-hairline pt-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-graphite">Tags</p>
-        <div className="flex flex-wrap gap-2">
-          {["Data Analysis", "Communication", "Leadership", "Customer", "Presentation"].map((tag) => (
-            <Tag key={tag}>{tag}</Tag>
-          ))}
-        </div>
-      </div>
-      <Panel className="mt-10 p-4">
-        <p className="font-semibold">Resume sync</p>
-        <p className="mt-3 text-sm leading-6 text-graphite">12 proofs are used in your current resume draft.</p>
-        <a href="#resume" className="mt-5 block rounded-[5px] border border-hairline bg-white px-4 py-3 text-center text-sm">
-          Review in Resume
-        </a>
-      </Panel>
-    </aside>
-  );
-}
-
-function Workspace({
+function StudentInputPanel({
   draftExperiences,
-  updateExperience,
-  selectedJobId,
-  selectJob,
-  job,
-  pack,
-  coverageCounts
+  updateExperience
 }: {
   draftExperiences: ExperienceCard[];
   updateExperience: (id: string, value: string) => void;
-  selectedJobId: string;
-  selectJob: (id: string) => void;
-  job: ReturnType<typeof getJob>;
-  pack: ReturnType<typeof getApplicationPack>;
-  coverageCounts: ReturnType<typeof getCoverageCounts>;
 }) {
   return (
-    <div>
+    <Panel className="p-5 md:p-6">
       <SectionHeader
-        eyebrow="Student Workspace"
-        title="From messy experience to role-specific claims"
-        copy="Edit the seeded student wording, choose a sample role, and inspect how the hardcoded proof system maps evidence to employer requirements."
+        eyebrow="Step 1"
+        title="Capture what the student actually has"
+        copy="The interface should feel like an evidence intake, not a resume generator. Students can start messy and still know what proof matters."
       />
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-2xl">Experience Cards</h3>
-            <button className="inline-flex items-center gap-2 rounded-[5px] border border-hairline bg-white px-3 py-2 text-sm">
-              <Plus className="h-4 w-4" /> New card
+      <div className="space-y-4">
+        {draftExperiences.map((experience) => (
+          <article key={experience.id} className="rounded-[7px] border border-hairline bg-canvas p-4">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-serif text-2xl leading-tight">{experience.title}</p>
+                <p className="mt-1 text-sm text-graphite">
+                  {experience.sourceType} · {experience.institution} · {experience.date}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {experience.tags.map((tag) => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+              </div>
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood" htmlFor={`${experience.id}-wording`}>
+              Student wording
+            </label>
+            <textarea
+              id={`${experience.id}-wording`}
+              value={experience.messyWording}
+              onChange={(event) => updateExperience(experience.id, event.target.value)}
+              className="mt-2 min-h-[78px] w-full resize-none rounded-[6px] border border-hairline bg-white/80 p-3 text-sm outline-none transition focus:border-oxblood focus:ring-2 focus:ring-oxblood/10"
+            />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <EvidenceList title="Signals found" items={experience.extractedSignals} />
+              <EvidenceList title="Proof sources" items={experience.evidenceNotes} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function EvidenceList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-graphite">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-graphite">{items.join(" · ")}</p>
+    </div>
+  );
+}
+
+function RolePanel({
+  job,
+  selectedJobId,
+  selectJob,
+  coverageCounts,
+  pack
+}: {
+  job: ReturnType<typeof getJob>;
+  selectedJobId: string;
+  selectJob: (id: string) => void;
+  coverageCounts: ReturnType<typeof getCoverageCounts>;
+  pack: ReturnType<typeof getApplicationPack>;
+}) {
+  return (
+    <div className="space-y-6">
+      <Panel className="p-5 md:p-6">
+        <SectionHeader
+          eyebrow="Step 2"
+          title="Translate against a real role"
+          copy="The role comes before the rewrite, so the student sees why one experience becomes research, coordination, or customer proof."
+        />
+        <div className="grid gap-3">
+          {jobs.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => selectJob(item.id)}
+              className={`rounded-[6px] border p-4 text-left transition hover:-translate-y-0.5 ${
+                selectedJobId === item.id ? "border-oxblood bg-white shadow-panel" : "border-hairline bg-canvas hover:bg-white/80"
+              }`}
+            >
+              <span className="flex items-center justify-between gap-4">
+                <span>
+                  <span className="block font-serif text-2xl leading-tight">{item.title}</span>
+                  <span className="mt-1 block text-sm text-graphite">
+                    {item.company} · {item.location}
+                  </span>
+                </span>
+                {selectedJobId === item.id ? <CheckCircle2 className="h-5 w-5 text-oxblood" /> : null}
+              </span>
             </button>
-          </div>
-          {draftExperiences.map((experience) => (
-            <Panel key={experience.id} className="p-5">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-serif text-xl">{experience.title}</p>
-                  <p className="text-sm text-graphite">
-                    {experience.sourceType} · {experience.institution} · {experience.date}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {experience.tags.map((tag) => (
-                    <Tag key={tag}>{tag}</Tag>
-                  ))}
-                </div>
-              </div>
-              <textarea
-                value={experience.messyWording}
-                onChange={(event) => updateExperience(experience.id, event.target.value)}
-                className="min-h-[76px] w-full resize-none rounded-[6px] border border-hairline bg-canvas p-3 text-sm outline-none focus:border-oxblood"
-              />
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">Signals</p>
-                  <p className="mt-2 text-sm leading-6 text-graphite">{experience.extractedSignals.join(" · ")}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">Evidence notes</p>
-                  <p className="mt-2 text-sm leading-6 text-graphite">{experience.evidenceNotes.join(" · ")}</p>
-                </div>
-              </div>
-            </Panel>
           ))}
         </div>
+        <p className="mt-5 text-sm leading-6 text-graphite">{job.description}</p>
+      </Panel>
 
-        <div className="space-y-5">
-          <Panel className="p-5">
-            <h3 className="font-serif text-2xl">Job Requirement Extraction</h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-              {jobs.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => selectJob(item.id)}
-                  className={`rounded-[6px] border p-3 text-left text-sm ${
-                    selectedJobId === item.id ? "border-oxblood bg-white" : "border-hairline bg-canvas"
-                  }`}
-                >
-                  <span className="font-semibold">{item.title}</span>
-                  <span className="mt-1 block text-xs text-graphite">{item.company}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-5 text-sm leading-6 text-graphite">{job.description}</p>
-            <div className="mt-5 space-y-3">
-              {job.requirements.map((requirement) => (
-                <div key={requirement.id} className="rounded-[6px] border border-hairline bg-white/60 p-3">
-                  <p className="text-sm font-medium">{requirement.label}</p>
-                  <p className="mt-1 text-xs text-graphite">{requirement.sourcePhrase}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel className="p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-serif text-2xl">Requirement Coverage Map</h3>
-              <LineChart className="h-5 w-5 text-oxblood" />
-            </div>
-            <div className="mb-5 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-              {Object.entries(coverageCounts).map(([status, count]) => (
-                <div key={status} className="rounded-[6px] border border-hairline bg-canvas p-2">
-                  <p className="font-semibold">{count}</p>
-                  <p className="text-graphite">{status}</p>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              {pack.requirementCoverage.map((match) => {
-                const requirement = getRequirement(job.id, match.requirementId);
-                return (
-                  <div key={match.requirementId} className="rounded-[6px] border border-hairline bg-white/60 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{requirement.label}</p>
-                      <StatusBadge status={match.status} />
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-graphite">{match.explanation}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </Panel>
+      <Panel className="p-5 md:p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Requirement coverage</p>
+            <h3 className="mt-2 font-serif text-3xl leading-none">What is proven, possible, or missing</h3>
+          </div>
+          <LineChart className="h-6 w-6 text-oxblood" />
         </div>
-      </div>
+        <div className="mb-5 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+          {Object.entries(coverageCounts).map(([status, count]) => (
+            <div key={status} className="rounded-[6px] border border-hairline bg-canvas p-3">
+              <p className="font-serif text-2xl">{count}</p>
+              <p className="text-graphite">{status}</p>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          {pack.requirementCoverage.map((match) => {
+            const requirement = getRequirement(job.id, match.requirementId);
+            return (
+              <div key={match.requirementId} className="rounded-[6px] border border-hairline bg-white/70 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{requirement.label}</p>
+                  <StatusBadge status={match.status} />
+                </div>
+                <p className="mt-2 text-xs leading-5 text-graphite">{match.explanation}</p>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -333,19 +420,19 @@ function ClaimProofChain({
   selectedChain: ReturnType<typeof getApplicationPack>["claimProofChains"][number];
 }) {
   return (
-    <div>
+    <Panel className="p-5 md:p-6">
       <SectionHeader
-        eyebrow="Proof Chain"
-        title="Claim -> Proof -> Requirement -> Defense"
-        copy="Every generated bullet exposes the source experience, employer requirement, proof detail, clarification question, and defense prompt."
+        eyebrow="Step 3"
+        title="Show the claim chain before showing the dashboard"
+        copy="This is the core product idea: every generated sentence has a visible path back to source evidence and a question the student must be ready to answer."
       />
       <div className="mb-5 flex flex-wrap gap-2">
         {pack.claimProofChains.map((chain, index) => (
           <button
             key={chain.id}
             onClick={() => setSelectedClaimId(chain.id)}
-            className={`rounded-[5px] border px-3 py-2 text-sm ${
-              selectedClaimId === chain.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white"
+            className={`rounded-[5px] border px-3 py-2 text-sm transition ${
+              selectedClaimId === chain.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white hover:border-oxblood"
             }`}
           >
             Claim {index + 1}
@@ -368,51 +455,45 @@ function ClaimProofChain({
           footer={`Clarify first: ${selectedChain.clarificationQuestion}`}
         />
       </div>
-    </div>
+    </Panel>
   );
 }
 
 function ProofStep({ number, title, body, footer }: { number: string; title: string; body: string; footer: string }) {
   return (
-    <Panel className="p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-oxblood text-sm font-semibold text-white">
-          {number}
-        </span>
-        <div>
-          <p className="font-serif text-2xl">{title}</p>
-          <p className="mt-3 text-sm font-medium leading-6">{body}</p>
-          <p className="mt-5 border-t border-hairline pt-4 text-xs leading-5 text-graphite">{footer}</p>
-        </div>
-      </div>
-    </Panel>
+    <article className="rounded-[7px] border border-hairline bg-canvas p-5">
+      <span className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-oxblood text-sm font-semibold text-white">{number}</span>
+      <p className="mt-5 font-serif text-3xl">{title}</p>
+      <p className="mt-4 text-sm font-medium leading-6">{body}</p>
+      <p className="mt-5 border-t border-hairline pt-4 text-xs leading-5 text-graphite">{footer}</p>
+    </article>
   );
 }
 
 function BeforeAfter({ pack, selectedJobTitle }: { pack: ReturnType<typeof getApplicationPack>; selectedJobTitle: string }) {
   return (
-    <div>
+    <Panel className="p-5 md:p-6">
       <SectionHeader
-        eyebrow="Resume"
-        title="Before / After Resume View"
-        copy={`A role-specific transformation for ${selectedJobTitle}, with proof links kept visible beside each improved claim.`}
+        eyebrow="Step 4"
+        title="Make the output feel earned"
+        copy={`A role-specific resume view for ${selectedJobTitle}. The improved bullets are stronger because their proof links stay visible.`}
       />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel className="p-5">
-          <p className="font-serif text-2xl">Before</p>
+      <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="rounded-[7px] border border-hairline bg-canvas p-5">
+          <p className="font-serif text-3xl">Before</p>
           <div className="mt-5 space-y-3">
             {pack.beforeAfter.weak.map((item) => (
-              <div key={item} className="rounded-[6px] border border-hairline bg-canvas p-4 text-sm text-graphite">
+              <div key={item} className="rounded-[6px] border border-hairline bg-white/60 p-4 text-sm text-graphite">
                 {item}
               </div>
             ))}
           </div>
-        </Panel>
-        <Panel className="p-5">
-          <p className="font-serif text-2xl">After</p>
+        </div>
+        <div className="rounded-[7px] border border-oxblood bg-white p-5">
+          <p className="font-serif text-3xl">After</p>
           <div className="mt-5 space-y-3">
             {pack.beforeAfter.improved.map((item) => (
-              <div key={item.id} className="rounded-[6px] border border-hairline bg-white/70 p-4">
+              <div key={item.id} className="rounded-[6px] border border-hairline bg-canvas p-4">
                 <p className="text-sm font-medium leading-6">{item.text}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {item.sourceExperienceIds.map((id) => (
@@ -425,13 +506,13 @@ function BeforeAfter({ pack, selectedJobTitle }: { pack: ReturnType<typeof getAp
               </div>
             ))}
           </div>
-        </Panel>
+        </div>
       </div>
-    </div>
+    </Panel>
   );
 }
 
-function SkillProofCards({
+function ProofLibrary({
   cards,
   selectedProof,
   setSelectedProofId,
@@ -446,104 +527,90 @@ function SkillProofCards({
   const source = getExperience(selectedProof.sourceExperienceId);
 
   return (
-    <div className="grid min-h-[760px] grid-cols-1 lg:grid-cols-[238px_minmax(0,1fr)]">
-      <SideRail />
-      <div className="grid gap-5 px-5 py-8 md:px-8 xl:grid-cols-[1fr_0.68fr]">
+    <Panel className="p-5 md:p-6">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
         <div>
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
-            <div>
-              <h2 className="font-serif text-5xl leading-none">Skill Proof Cards</h2>
-              <p className="mt-3 text-sm text-graphite">Browse and manage the proof behind your resume claims.</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex min-w-[240px] items-center gap-2 rounded-[6px] border border-hairline bg-white px-3 py-2 text-sm text-graphite">
-                <Search className="h-4 w-4" /> Search proofs...
-              </div>
-              <button className="rounded-[6px] border border-hairline bg-white p-2">
-                <Filter className="h-5 w-5" />
-              </button>
-              <button className="inline-flex items-center gap-2 rounded-[6px] bg-oxblood px-4 py-2 text-sm text-white">
-                <Plus className="h-4 w-4" /> New proof
-              </button>
-            </div>
-          </div>
-          <div className="mb-4 flex justify-between text-sm text-graphite">
-            <span>24 proofs</span>
-            <span>Sort by: Recently updated</span>
-          </div>
-          <div className="space-y-3">
-            {cards.map((card) => (
-              <button
-                key={card.id}
-                onClick={() => setSelectedProofId(card.id)}
-                className={`w-full rounded-[8px] border bg-white/58 p-4 text-left ${
-                  selectedProof.id === card.id ? "border-oxblood" : "border-hairline"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border border-hairline bg-canvas text-oxblood">
-                    <Database className="h-7 w-7" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-serif text-xl">{card.skillLabel}</p>
-                    <p className="text-sm text-graphite">{getExperience(card.sourceExperienceId).title}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {card.tags.map((tag) => (
-                        <Tag key={tag}>{tag}</Tag>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="hidden text-right md:block">
-                    <StatusBadge status={card.status} />
-                    <p className="mt-3 text-xs text-graphite">Updated recently</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5" />
-                </div>
-              </button>
-            ))}
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Proof library</p>
+          <h2 className="mt-2 font-serif text-4xl leading-none md:text-5xl">The dashboard only appears after the story is clear</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-graphite">
+            Browse the evidence objects that support claims. This is operational detail, so it should support the story rather than open the demo.
+          </p>
         </div>
-        <Panel className="self-start p-6">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex min-w-[220px] items-center gap-2 rounded-[6px] border border-hairline bg-white px-3 py-2 text-sm text-graphite">
+            <Search className="h-4 w-4" /> Search proofs
+          </div>
+          <button className="rounded-[6px] border border-hairline bg-white p-2" aria-label="Filter proofs">
+            <Filter className="h-5 w-5" />
+          </button>
+          <button className="inline-flex items-center gap-2 rounded-[6px] bg-oxblood px-4 py-2 text-sm text-white">
+            <Plus className="h-4 w-4" /> New proof
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="space-y-3">
+          {cards.map((card) => (
+            <button
+              key={card.id}
+              onClick={() => setSelectedProofId(card.id)}
+              className={`w-full rounded-[8px] border p-4 text-left transition hover:-translate-y-0.5 ${
+                selectedProof.id === card.id ? "border-oxblood bg-white shadow-panel" : "border-hairline bg-canvas hover:bg-white/80"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border border-hairline bg-white text-oxblood">
+                  <Database className="h-7 w-7" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-serif text-xl">{card.skillLabel}</p>
+                  <p className="text-sm text-graphite">{getExperience(card.sourceExperienceId).title}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {card.tags.map((tag) => (
+                      <Tag key={tag}>{tag}</Tag>
+                    ))}
+                  </div>
+                </div>
+                <StatusBadge status={card.status} />
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="rounded-[8px] border border-hairline bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-serif text-3xl">{selectedProof.skillLabel}</h3>
+              <h3 className="font-serif text-4xl leading-none">{selectedProof.skillLabel}</h3>
               <div className="mt-4">
                 <StatusBadge status={selectedProof.status} />
               </div>
             </div>
             <button className="inline-flex items-center gap-2 rounded-[6px] border border-hairline bg-white px-4 py-2 text-sm">
-              <Pencil className="h-4 w-4" /> Edit proof
+              <Pencil className="h-4 w-4" /> Edit
             </button>
           </div>
-          <DetailBlock icon={<FileText />} label="Source Experience">
+          <DetailBlock icon={<FileText />} label="Source experience">
             <p className="font-medium">{source.title}</p>
-            <p className="text-graphite">{source.date} · {source.sourceType}</p>
+            <p className="text-graphite">
+              {source.date} · {source.sourceType}
+            </p>
           </DetailBlock>
-          <DetailBlock icon={<ClipboardList />} label="Proof Detail">
+          <DetailBlock icon={<ClipboardList />} label="Proof detail">
             <p>{selectedProof.proofDetail}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {selectedProof.tags.map((tag) => (
-                <Tag key={tag}>{tag}</Tag>
-              ))}
-            </div>
           </DetailBlock>
-          <DetailBlock icon={<Sparkles />} label="Generated Resume Bullet">
+          <DetailBlock icon={<Sparkles />} label="Generated resume bullet">
             <p>{generatedBullet?.text}</p>
           </DetailBlock>
-          <DetailBlock icon={<MessageCircleQuestion />} label="Likely Interview Question">
+          <DetailBlock icon={<MessageCircleQuestion />} label="Likely interview question">
             <p>{selectedProof.interviewQuestion}</p>
           </DetailBlock>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4 text-sm text-graphite">
-            <span>Proof ID: PR-{selectedProof.id.toUpperCase()}</span>
-            <a href="#recruiter" className="text-oxblood">View proof activity</a>
-          </div>
-        </Panel>
+        </div>
       </div>
-    </div>
+    </Panel>
   );
 }
 
-function DetailBlock({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+function DetailBlock({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
     <div className="mt-6 border-t border-hairline pt-5">
       <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">
@@ -570,13 +637,13 @@ function InterrogationAndLens({
   return (
     <div className="mx-auto max-w-[1480px]">
       <SectionHeader
-        eyebrow="Evidence Gaps"
-        title="Experience Interrogation and Switch Lens"
-        copy="The demo asks for missing proof before stronger claims are implied, then reframes one source experience across different role lenses."
+        eyebrow="Evidence gaps"
+        title="When proof is missing, ask for it"
+        copy="The app should not imply stronger claims than the student can defend. It asks targeted questions and shows how one source changes under different role lenses."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Interrogation Prompts</h3>
+          <h3 className="font-serif text-3xl">Clarification prompts</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {pack.interrogationPrompts.map((group) => {
               const source = draftExperiences.find((experience) => experience.id === group.experienceId) ?? getExperience(group.experienceId);
@@ -597,14 +664,14 @@ function InterrogationAndLens({
           </div>
         </Panel>
         <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Switch Lens</h3>
+          <h3 className="font-serif text-3xl">Switch lens</h3>
           <div className="mt-5 flex flex-wrap gap-2">
             {jobs.map((job) => (
               <button
                 key={job.id}
                 onClick={() => selectJob(job.id)}
-                className={`rounded-[5px] border px-3 py-2 text-sm ${
-                  selectedJobId === job.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white"
+                className={`rounded-[5px] border px-3 py-2 text-sm transition ${
+                  selectedJobId === job.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white hover:border-oxblood"
                 }`}
               >
                 {job.title}
@@ -635,9 +702,9 @@ function RecruiterReview({ selectedJobId, pack }: { selectedJobId: string; pack:
   return (
     <div className="mx-auto max-w-[1480px]">
       <SectionHeader
-        eyebrow="Recruiter View"
-        title="Recruiter Proof Review"
-        copy="A careful evidence review surface. It links claims to source proof and requirements without ranking, scoring, or making hiring recommendations."
+        eyebrow="Step 5"
+        title="Recruiter review stays evidence-based"
+        copy="This view explains what can be verified, what still needs clarification, and which requirements are covered. It avoids rankings, hiring recommendations, and fake readiness scores."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <Panel className="p-6">
@@ -662,7 +729,7 @@ function RecruiterReview({ selectedJobId, pack }: { selectedJobId: string; pack:
           </div>
         </Panel>
         <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Signal Summary</h3>
+          <h3 className="font-serif text-3xl">Signal summary</h3>
           <SignalGroup title="Strongest supported skills" items={review.signalSummary.strongestSupportedSkills} />
           <SignalGroup title="Skills needing clarification" items={review.signalSummary.skillsNeedingClarification} />
           <SignalGroup title="Experience sources used" items={review.signalSummary.experienceSourcesUsed} />

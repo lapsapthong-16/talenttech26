@@ -35,7 +35,7 @@ export function StatusBadge({ status }: { status: MatchStatus }) {
 }
 
 export function Tag({ children }: { children: ReactNode }) {
-  return <span className="rounded-[5px] border border-hairline bg-white/70 px-2 py-1 text-xs text-graphite">{children}</span>;
+  return <span className="rounded-[5px] border border-hairline bg-white/80 px-2 py-1 text-xs text-graphite">{children}</span>;
 }
 
 export function SectionHeader({
@@ -63,7 +63,7 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`rounded-[8px] border border-hairline bg-white/58 ${className}`}>{children}</div>;
+  return <div className={`rounded-[8px] border border-hairline bg-white/64 shadow-[0_1px_0_rgba(255,255,255,0.72)_inset] ${className}`}>{children}</div>;
 }
 
 export function SourceChip({ children }: { children: ReactNode }) {
