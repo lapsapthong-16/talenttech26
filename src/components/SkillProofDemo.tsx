@@ -3,747 +3,637 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
-  Bell,
+  ArrowRight,
   CheckCircle2,
   ClipboardList,
-  Database,
-  FileText,
-  Filter,
-  LineChart,
-  MessageCircleQuestion,
-  Pencil,
-  Plus,
+  FileSearch,
+  Layers3,
+  RefreshCw,
   Search,
-  Sparkles,
+  ShieldCheck,
+  Sparkles
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { applicationPacks, experiences as seededExperiences, jobs, switchLensFrames } from "@/lib/demoData";
+import { jobs, experiences as seededExperiences } from "@/lib/demoData";
 import { getApplicationPack, getCoverageCounts, getExperience, getJob, getLensFrame, getRequirement } from "@/lib/skillproof";
-import type { ExperienceCard, SkillProofCard } from "@/types/skillproof";
+import type { ExperienceCard, ExperienceSource } from "@/types/skillproof";
 import { Panel, SectionHeader, SourceChip, StatusBadge, Tag } from "@/components/ui";
 
-const storySteps: Array<[string, string, string]> = [
-  ["01", "Start with weak evidence", "The student writes what they actually remember, not polished resume language."],
-  ["02", "Pick the target role", "SkillProof reads the employer's requirements before it rewrites anything."],
-  ["03", "Build a claim chain", "Every resume bullet keeps its source proof, matched requirement, and defense question attached."],
-  ["04", "Review without scoring", "Recruiters see evidence links and gaps, not fake readiness percentages."]
+const flowSteps = [
+  "Start",
+  "Paste experience",
+  "Target job",
+  "AI recommendation",
+  "Generated claims"
 ];
 
-const quickLinks = [
-  ["Story", "#story"],
-  ["Workspace", "#workspace"],
-  ["Claim chain", "#claim-chain"],
-  ["Proof library", "#proof-library"],
-  ["Recruiter", "#recruiter"]
-];
+const sourceOptions: ExperienceSource[] = ["Coursework", "Part-time", "Club"];
+
+const jobPasteExample =
+  "We are hiring a Marketing Intern to support customer research, campaign insight, simple coordination, and clear presentation of recommendations.";
 
 export default function SkillProofDemo() {
+  const [step, setStep] = useState(0);
   const [selectedJobId, setSelectedJobId] = useState(jobs[0].id);
-  const [selectedProofId, setSelectedProofId] = useState(applicationPacks[jobs[0].id].skillProofCards[0].id);
-  const [selectedClaimId, setSelectedClaimId] = useState(applicationPacks[jobs[0].id].claimProofChains[0].id);
-  const [draftExperiences, setDraftExperiences] = useState<ExperienceCard[]>(seededExperiences);
+  const [selectedSource, setSelectedSource] = useState<ExperienceSource>("Coursework");
+  const [experienceText, setExperienceText] = useState(seededExperiences[0].messyWording);
+  const [jobPostText, setJobPostText] = useState(jobPasteExample);
+  const [selectedClaimId, setSelectedClaimId] = useState(getApplicationPack(jobs[0].id).claimProofChains[0].id);
 
   const job = getJob(selectedJobId);
   const pack = getApplicationPack(selectedJobId);
-  const selectedProof = pack.skillProofCards.find((card) => card.id === selectedProofId) ?? pack.skillProofCards[0];
   const selectedChain = pack.claimProofChains.find((chain) => chain.id === selectedClaimId) ?? pack.claimProofChains[0];
   const selectedBullet = pack.proofBackedBullets.find((bullet) => bullet.id === selectedChain.generatedBulletId) ?? pack.proofBackedBullets[0];
   const selectedRequirement = getRequirement(selectedJobId, selectedChain.linkedRequirementId);
-  const selectedExperience = getExperience(selectedChain.sourceExperienceId);
-  const lensFrame = getLensFrame(selectedJobId);
+  const sourceExperience = useMemo(() => getExperienceForSource(selectedSource), [selectedSource]);
+  const proofExperience = getExperience(selectedChain.sourceExperienceId);
   const coverageCounts = useMemo(() => getCoverageCounts(selectedJobId), [selectedJobId]);
+  const lensFrame = getLensFrame(selectedJobId);
 
   function selectJob(jobId: string) {
     const nextPack = getApplicationPack(jobId);
     setSelectedJobId(jobId);
-    setSelectedProofId(nextPack.skillProofCards[0].id);
     setSelectedClaimId(nextPack.claimProofChains[0].id);
   }
 
-  function updateExperience(id: string, value: string) {
-    setDraftExperiences((current) =>
-      current.map((experience) => (experience.id === id ? { ...experience, messyWording: value } : experience))
-    );
+  function selectSource(source: ExperienceSource) {
+    const nextExperience = getExperienceForSource(source);
+    setSelectedSource(source);
+    setExperienceText(nextExperience.messyWording);
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-canvas text-ink">
-      <AppTopNav />
-      <section className="px-4 pb-10 pt-6 md:px-8 md:pb-12">
-        <div className="mx-auto max-w-[1480px] overflow-hidden rounded-[8px] border border-hairline bg-white/46 shadow-panel">
-          <StoryHero
-            job={job}
-            pack={pack}
-            selectedBullet={selectedBullet}
-            selectedExperience={selectedExperience}
-            selectedRequirement={selectedRequirement}
-          />
-          <StoryRail />
-        </div>
-      </section>
+    <main className="min-h-screen bg-canvas text-ink">
+      <PrototypeNav step={step} setStep={setStep} />
 
-      <section id="workspace" className="px-4 pb-10 md:px-8">
-        <div className="mx-auto grid max-w-[1480px] gap-6 xl:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)]">
-          <StudentInputPanel draftExperiences={draftExperiences} updateExperience={updateExperience} />
-          <RolePanel job={job} selectedJobId={selectedJobId} selectJob={selectJob} coverageCounts={coverageCounts} pack={pack} />
-        </div>
-      </section>
-
-      <section id="claim-chain" className="px-4 pb-10 md:px-8">
+      <section className="px-4 py-6 md:px-8 md:py-8">
         <div className="mx-auto max-w-[1480px]">
-          <ClaimProofChain
-            pack={pack}
-            selectedClaimId={selectedClaimId}
-            setSelectedClaimId={setSelectedClaimId}
-            selectedBullet={selectedBullet}
-            selectedExperience={selectedExperience}
-            selectedRequirement={selectedRequirement}
-            selectedChain={selectedChain}
-          />
+          <FlowProgress step={step} setStep={setStep} />
+
+          {step === 0 ? <StartScreen setStep={setStep} /> : null}
+          {step === 1 ? (
+            <ExperienceScreen
+              selectedSource={selectedSource}
+              selectSource={selectSource}
+              sourceExperience={sourceExperience}
+              experienceText={experienceText}
+              setExperienceText={setExperienceText}
+              setStep={setStep}
+            />
+          ) : null}
+          {step === 2 ? (
+            <TargetJobScreen
+              selectedJobId={selectedJobId}
+              selectJob={selectJob}
+              jobPostText={jobPostText}
+              setJobPostText={setJobPostText}
+              job={job}
+              setStep={setStep}
+            />
+          ) : null}
+          {step === 3 ? (
+            <RecommendationScreen
+              sourceExperience={sourceExperience}
+              experienceText={experienceText}
+              job={job}
+              pack={pack}
+              coverageCounts={coverageCounts}
+              setStep={setStep}
+            />
+          ) : null}
+          {step === 4 ? (
+            <GeneratedClaimsScreen
+              pack={pack}
+              selectedClaimId={selectedClaimId}
+              setSelectedClaimId={setSelectedClaimId}
+              selectedBullet={selectedBullet}
+              selectedRequirement={selectedRequirement}
+              selectedChain={selectedChain}
+              proofExperience={proofExperience}
+              job={job}
+            />
+          ) : null}
         </div>
       </section>
 
-      <section id="resume" className="px-4 pb-10 md:px-8">
-        <div className="mx-auto max-w-[1480px]">
-          <BeforeAfter pack={pack} selectedJobTitle={job.title} />
-        </div>
-      </section>
-
-      <section id="proof-library" className="px-4 pb-10 md:px-8">
-        <div className="mx-auto max-w-[1480px]">
-          <ProofLibrary
-            cards={pack.skillProofCards}
-            selectedProof={selectedProof}
-            setSelectedProofId={setSelectedProofId}
-            selectedJobId={selectedJobId}
-          />
-        </div>
-      </section>
-
-      <section id="interrogation" className="px-4 pb-10 md:px-8">
-        <InterrogationAndLens
-          pack={pack}
-          lensFrame={lensFrame}
-          selectedJobId={selectedJobId}
-          selectJob={selectJob}
-          draftExperiences={draftExperiences}
-        />
-      </section>
-
-      <section id="recruiter" className="px-4 pb-16 md:px-8 md:pb-24">
-        <RecruiterReview selectedJobId={selectedJobId} pack={pack} />
-      </section>
+      <SecondaryScreens
+        pack={pack}
+        selectedJobId={selectedJobId}
+        selectedJobTitle={job.title}
+        lensFrame={lensFrame}
+        selectJob={selectJob}
+      />
     </main>
   );
 }
 
-function AppTopNav() {
+function getExperienceForSource(source: ExperienceSource): ExperienceCard {
+  return seededExperiences.find((experience) => experience.sourceType === source) ?? seededExperiences[0];
+}
+
+function PrototypeNav({ step, setStep }: { step: number; setStep: (step: number) => void }) {
   return (
     <header className="sticky top-0 z-20 border-b border-hairline bg-canvas/92 px-4 backdrop-blur md:px-8">
-      <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-5 py-5">
+      <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-4 py-4">
         <a className="font-serif text-3xl font-semibold" href="/">
           SkillProof
         </a>
-        <nav className="flex flex-wrap gap-4 text-sm md:gap-6">
-          {quickLinks.map(([label, href]) => (
-            <a key={label} href={href} className="rounded-[5px] px-1 py-2 text-graphite transition hover:text-oxblood">
+        <nav className="flex flex-wrap gap-2">
+          {flowSteps.map((label, index) => (
+            <button
+              key={label}
+              onClick={() => setStep(index)}
+              className={`rounded-[5px] border px-3 py-2 text-xs font-medium ${
+                step === index ? "border-ink bg-ink text-white" : "border-hairline bg-white/70 text-graphite hover:border-ink"
+              }`}
+            >
               {label}
-            </a>
+            </button>
           ))}
         </nav>
-        <div className="flex items-center gap-4">
-          <Bell className="h-5 w-5 text-graphite" />
-          <span className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-ink text-xs font-semibold text-white">AM</span>
-        </div>
       </div>
     </header>
   );
 }
 
-function StoryHero({
-  job,
-  pack,
-  selectedBullet,
-  selectedExperience,
-  selectedRequirement
-}: {
-  job: ReturnType<typeof getJob>;
-  pack: ReturnType<typeof getApplicationPack>;
-  selectedBullet: ReturnType<typeof getApplicationPack>["proofBackedBullets"][number];
-  selectedExperience: ExperienceCard;
-  selectedRequirement: ReturnType<typeof getRequirement>;
-}) {
+function FlowProgress({ step, setStep }: { step: number; setStep: (step: number) => void }) {
   return (
-    <section id="story" className="grid gap-8 px-5 py-8 md:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:py-12">
-      <div className="flex min-h-[560px] flex-col justify-between">
+    <div className="mb-5 grid gap-2 sm:grid-cols-5">
+      {flowSteps.map((label, index) => (
+        <button
+          key={label}
+          onClick={() => setStep(index)}
+          className={`rounded-[6px] border p-3 text-left ${
+            step === index ? "border-violet bg-violet-soft" : index < step ? "border-sage-ink/20 bg-sage" : "border-hairline bg-white/62"
+          }`}
+        >
+          <p className="font-mono text-xs text-graphite">0{index + 1}</p>
+          <p className="mt-1 text-sm font-medium">{label}</p>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StartScreen({ setStep }: { setStep: (step: number) => void }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[0.86fr_1.14fr]">
+      <Panel className="flex min-h-[620px] flex-col justify-between p-6 md:p-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Guided product story</p>
-          <h1 className="mt-4 max-w-4xl font-serif text-[52px] leading-[0.92] md:text-[86px]">
-            Stop asking students to sound employable from memory.
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Primary prototype flow</p>
+          <h1 className="mt-5 max-w-4xl font-serif text-[58px] leading-[0.92] md:text-[92px]">
+            Turn messy student experience into proof-backed resume claims.
           </h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-graphite">
-            SkillProof starts with ordinary student experience, checks it against a target role, and only generates claims that can be traced back to proof.
+          <p className="mt-7 max-w-2xl text-lg leading-8 text-graphite">
+            SkillProof starts with what a student actually writes, compares it with employer requirements, then recommends claims the student can defend.
           </p>
         </div>
-        <div className="mt-10 grid gap-3 sm:grid-cols-3">
-          <Metric label="Target role" value={job.title} />
-          <Metric label="Proof cards" value={String(pack.skillProofCards.length)} />
-          <Metric label="First source" value={selectedExperience.sourceType} />
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+          <button
+            onClick={() => setStep(1)}
+            className="inline-flex items-center justify-between rounded-[6px] bg-oxblood px-6 py-5 font-serif text-xl text-white hover:bg-oxblood-dark sm:min-w-[300px]"
+          >
+            Start with pasted experience <ArrowRight className="h-5 w-5" />
+          </button>
+          <a className="inline-flex items-center justify-center rounded-[6px] border border-hairline bg-white px-6 py-5 text-sm font-medium hover:border-oxblood" href="#secondary">
+            View secondary screens
+          </a>
         </div>
-      </div>
+      </Panel>
 
-      <div className="grid content-start gap-4">
-        <div className="rounded-[8px] border border-hairline bg-white/70 p-5 shadow-panel">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">The transformation</p>
-          <div className="mt-5 grid gap-4 lg:grid-cols-[0.84fr_1.16fr]">
-            <div className="rounded-[6px] border border-hairline bg-canvas p-4">
-              <p className="text-xs font-semibold text-graphite">Student starts with</p>
-              <p className="mt-4 font-serif text-3xl leading-tight">{selectedExperience.messyWording}</p>
-              <p className="mt-5 text-sm leading-6 text-graphite">
-                This is honest, but too vague for a recruiter and too weak for an interview.
-              </p>
-            </div>
-            <div className="rounded-[6px] border border-oxblood bg-white p-4">
-              <p className="text-xs font-semibold text-oxblood">SkillProof turns it into</p>
-              <p className="mt-4 text-lg font-semibold leading-7">{selectedBullet.text}</p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <SourceChip>{selectedExperience.title}</SourceChip>
-                <SourceChip>{selectedRequirement.label}</SourceChip>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Panel className="p-5">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Explanation icon={ClipboardList} title="No blind rewrite" copy="The app keeps the weak original visible." />
-            <Explanation icon={LineChart} title="No vague matching" copy="Each claim maps to one employer requirement." />
-            <Explanation icon={MessageCircleQuestion} title="No fake certainty" copy="Missing proof becomes a question, not a score." />
-          </div>
-        </Panel>
-      </div>
-    </section>
-  );
-}
-
-function StoryRail() {
-  return (
-    <section className="border-t border-hairline bg-white/45 px-5 py-5 md:px-8">
-      <div className="grid gap-3 lg:grid-cols-4">
-        {storySteps.map(([number, title, copy]) => (
-          <div key={number} className="rounded-[6px] border border-hairline bg-canvas p-4">
-            <p className="font-mono text-xs text-oxblood">{number}</p>
-            <p className="mt-3 font-serif text-xl">{title}</p>
-            <p className="mt-2 text-sm leading-6 text-graphite">{copy}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-t border-hairline pt-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-graphite">{label}</p>
-      <p className="mt-2 font-serif text-2xl leading-tight">{value}</p>
-    </div>
-  );
-}
-
-function Explanation({ icon: Icon, title, copy }: { icon: LucideIcon; title: string; copy: string }) {
-  return (
-    <div className="flex gap-3">
-      <Icon className="mt-1 h-5 w-5 shrink-0 text-oxblood" />
-      <div>
-        <p className="font-serif text-xl">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-graphite">{copy}</p>
+      <div className="grid gap-4">
+        <PrimaryFlowCard icon={<ClipboardList />} title="1. Student pastes something messy" copy="The prototype begins with weak wording, not a dashboard." />
+        <PrimaryFlowCard icon={<FileSearch />} title="2. SkillProof reads the target role" copy="The job requirement comes before the rewrite." />
+        <PrimaryFlowCard icon={<Sparkles />} title="3. Simulated AI recommends claims" copy="The demo shows matches, gaps, questions, and role-specific bullets." />
+        <PrimaryFlowCard icon={<ShieldCheck />} title="4. Every claim has a defense" copy="The output is Claim -> Proof -> Requirement -> Defense." />
       </div>
     </div>
   );
 }
 
-function StudentInputPanel({
-  draftExperiences,
-  updateExperience
-}: {
-  draftExperiences: ExperienceCard[];
-  updateExperience: (id: string, value: string) => void;
-}) {
+function PrimaryFlowCard({ icon, title, copy }: { icon: ReactNode; title: string; copy: string }) {
   return (
-    <Panel className="p-5 md:p-6">
-      <SectionHeader
-        eyebrow="Step 1"
-        title="Capture what the student actually has"
-        copy="The interface should feel like an evidence intake, not a resume generator. Students can start messy and still know what proof matters."
-      />
-      <div className="space-y-4">
-        {draftExperiences.map((experience) => (
-          <article key={experience.id} className="rounded-[7px] border border-hairline bg-canvas p-4">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-serif text-2xl leading-tight">{experience.title}</p>
-                <p className="mt-1 text-sm text-graphite">
-                  {experience.sourceType} · {experience.institution} · {experience.date}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {experience.tags.map((tag) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))}
-              </div>
-            </div>
-            <label className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood" htmlFor={`${experience.id}-wording`}>
-              Student wording
-            </label>
-            <textarea
-              id={`${experience.id}-wording`}
-              value={experience.messyWording}
-              onChange={(event) => updateExperience(experience.id, event.target.value)}
-              className="mt-2 min-h-[78px] w-full resize-none rounded-[6px] border border-hairline bg-white/80 p-3 text-sm outline-none transition focus:border-oxblood focus:ring-2 focus:ring-oxblood/10"
-            />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <EvidenceList title="Signals found" items={experience.extractedSignals} />
-              <EvidenceList title="Proof sources" items={experience.evidenceNotes} />
-            </div>
-          </article>
-        ))}
+    <Panel className="p-6">
+      <div className="flex gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[7px] bg-cyan-soft text-cyan">{icon}</div>
+        <div>
+          <h2 className="font-serif text-3xl leading-tight">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-graphite">{copy}</p>
+        </div>
       </div>
     </Panel>
   );
 }
 
-function EvidenceList({ title, items }: { title: string; items: string[] }) {
+function ExperienceScreen({
+  selectedSource,
+  selectSource,
+  sourceExperience,
+  experienceText,
+  setExperienceText,
+  setStep
+}: {
+  selectedSource: ExperienceSource;
+  selectSource: (source: ExperienceSource) => void;
+  sourceExperience: ExperienceCard;
+  experienceText: string;
+  setExperienceText: (value: string) => void;
+  setStep: (step: number) => void;
+}) {
   return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-graphite">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-graphite">{items.join(" · ")}</p>
+    <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+      <Panel className="p-6 md:p-8">
+        <SectionHeader
+          eyebrow="Paste experience"
+          title="Start with what the student actually writes"
+          copy="This screen makes the prototype understandable: the user enters rough student experience before any proof system appears."
+        />
+        <div className="mb-5 flex flex-wrap gap-2">
+          {sourceOptions.map((source) => (
+            <button
+              key={source}
+              onClick={() => selectSource(source)}
+              className={`rounded-[5px] border px-4 py-2 text-sm ${
+                selectedSource === source ? "border-cyan bg-cyan text-white" : "border-hairline bg-white hover:border-cyan"
+              }`}
+            >
+              {source}
+            </button>
+          ))}
+        </div>
+        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan" htmlFor="experience-paste">
+          Messy student wording
+        </label>
+        <textarea
+          id="experience-paste"
+          value={experienceText}
+          onChange={(event) => setExperienceText(event.target.value)}
+          className="mt-3 min-h-[190px] w-full resize-none rounded-[7px] border border-cyan/20 bg-white/90 p-5 text-xl leading-8 outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/10"
+        />
+        <button
+          onClick={() => setStep(2)}
+          className="mt-6 inline-flex items-center gap-2 rounded-[6px] bg-ink px-5 py-4 text-sm font-medium text-white hover:bg-oxblood"
+        >
+          Continue to target job <ArrowRight className="h-4 w-4" />
+        </button>
+      </Panel>
+
+      <Panel className="p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet">Simulated detection</p>
+        <h2 className="mt-3 font-serif text-4xl leading-none">{sourceExperience.title}</h2>
+        <p className="mt-2 text-sm text-graphite">
+          {sourceExperience.institution} · {sourceExperience.date}
+        </p>
+        <SignalList title="Signals SkillProof can see" items={sourceExperience.extractedSignals} />
+        <SignalList title="Proof hints to ask about" items={sourceExperience.evidenceNotes} />
+      </Panel>
     </div>
   );
 }
 
-function RolePanel({
-  job,
+function TargetJobScreen({
   selectedJobId,
   selectJob,
-  coverageCounts,
-  pack
+  jobPostText,
+  setJobPostText,
+  job,
+  setStep
 }: {
-  job: ReturnType<typeof getJob>;
   selectedJobId: string;
-  selectJob: (id: string) => void;
-  coverageCounts: ReturnType<typeof getCoverageCounts>;
-  pack: ReturnType<typeof getApplicationPack>;
+  selectJob: (jobId: string) => void;
+  jobPostText: string;
+  setJobPostText: (value: string) => void;
+  job: ReturnType<typeof getJob>;
+  setStep: (step: number) => void;
 }) {
   return (
-    <div className="space-y-6">
-      <Panel className="p-5 md:p-6">
+    <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+      <Panel className="p-6 md:p-8">
         <SectionHeader
-          eyebrow="Step 2"
-          title="Translate against a real role"
-          copy="The role comes before the rewrite, so the student sees why one experience becomes research, coordination, or customer proof."
+          eyebrow="Target job"
+          title="Choose or paste the role before rewriting"
+          copy="SkillProof should feel requirement-led. The student sees employer language before generated resume bullets."
         />
         <div className="grid gap-3">
           {jobs.map((item) => (
             <button
               key={item.id}
               onClick={() => selectJob(item.id)}
-              className={`rounded-[6px] border p-4 text-left transition hover:-translate-y-0.5 ${
-                selectedJobId === item.id ? "border-oxblood bg-white shadow-panel" : "border-hairline bg-canvas hover:bg-white/80"
+              className={`rounded-[7px] border p-4 text-left ${
+                selectedJobId === item.id ? "border-violet bg-violet-soft shadow-panel" : "border-hairline bg-white/72 hover:border-violet"
               }`}
             >
-              <span className="flex items-center justify-between gap-4">
+              <span className="flex items-center justify-between gap-3">
                 <span>
-                  <span className="block font-serif text-2xl leading-tight">{item.title}</span>
-                  <span className="mt-1 block text-sm text-graphite">
+                  <span className="block font-serif text-2xl">{item.title}</span>
+                  <span className="text-sm text-graphite">
                     {item.company} · {item.location}
                   </span>
                 </span>
-                {selectedJobId === item.id ? <CheckCircle2 className="h-5 w-5 text-oxblood" /> : null}
+                {selectedJobId === item.id ? <CheckCircle2 className="h-5 w-5 text-violet" /> : null}
               </span>
             </button>
           ))}
         </div>
-        <p className="mt-5 text-sm leading-6 text-graphite">{job.description}</p>
       </Panel>
 
-      <Panel className="p-5 md:p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Requirement coverage</p>
-            <h3 className="mt-2 font-serif text-3xl leading-none">What is proven, possible, or missing</h3>
+      <Panel className="p-6 md:p-8">
+        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan" htmlFor="job-paste">
+          Optional pasted job post
+        </label>
+        <textarea
+          id="job-paste"
+          value={jobPostText}
+          onChange={(event) => setJobPostText(event.target.value)}
+          className="mt-3 min-h-[150px] w-full resize-none rounded-[7px] border border-cyan/20 bg-white/90 p-4 text-sm leading-6 outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/10"
+        />
+        <div className="mt-6 rounded-[7px] border border-cyan/20 bg-cyan-soft p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan">Extracted requirements for {job.title}</p>
+          <div className="mt-4 space-y-3">
+            {job.requirements.map((requirement) => (
+              <div key={requirement.id} className="rounded-[6px] border border-white/80 bg-white/72 p-3">
+                <p className="font-medium">{requirement.label}</p>
+                <p className="mt-1 text-xs leading-5 text-graphite">{requirement.sourcePhrase}</p>
+              </div>
+            ))}
           </div>
-          <LineChart className="h-6 w-6 text-oxblood" />
         </div>
-        <div className="mb-5 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-          {Object.entries(coverageCounts).map(([status, count]) => (
-            <div key={status} className="rounded-[6px] border border-hairline bg-canvas p-3">
-              <p className="font-serif text-2xl">{count}</p>
-              <p className="text-graphite">{status}</p>
-            </div>
-          ))}
+        <button
+          onClick={() => setStep(3)}
+          className="mt-6 inline-flex items-center gap-2 rounded-[6px] bg-ink px-5 py-4 text-sm font-medium text-white hover:bg-oxblood"
+        >
+          Run simulated AI recommendation <Sparkles className="h-4 w-4" />
+        </button>
+      </Panel>
+    </div>
+  );
+}
+
+function RecommendationScreen({
+  sourceExperience,
+  experienceText,
+  job,
+  pack,
+  coverageCounts,
+  setStep
+}: {
+  sourceExperience: ExperienceCard;
+  experienceText: string;
+  job: ReturnType<typeof getJob>;
+  pack: ReturnType<typeof getApplicationPack>;
+  coverageCounts: ReturnType<typeof getCoverageCounts>;
+  setStep: (step: number) => void;
+}) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[0.84fr_1.16fr]">
+      <Panel className="p-6 md:p-8">
+        <SectionHeader
+          eyebrow="AI recommendation"
+          title="Show analysis before the output"
+          copy="This is where the prototype explains what the AI would recommend, without pretending to be a full backend system."
+        />
+        <div className="rounded-[7px] border border-coral/20 bg-coral-soft p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-coral">Input understood</p>
+          <p className="mt-3 font-serif text-3xl leading-tight">{experienceText}</p>
+          <p className="mt-4 text-sm leading-6 text-graphite">Mapped from: {sourceExperience.title}</p>
+        </div>
+        <SignalList title="Experience signals" items={sourceExperience.extractedSignals} />
+        <SignalList title="Proof gaps to clarify" items={pack.interrogationPrompts[0]?.prompts ?? []} />
+      </Panel>
+
+      <Panel className="p-6 md:p-8">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime">Requirement match</p>
+            <h2 className="mt-2 font-serif text-4xl leading-none">{job.title}</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            {Object.entries(coverageCounts).map(([status, count]) => (
+              <div key={status} className="rounded-[5px] border border-hairline bg-white/70 p-2">
+                <p className="font-serif text-2xl">{count}</p>
+                <p>{status}</p>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="space-y-3">
           {pack.requirementCoverage.map((match) => {
             const requirement = getRequirement(job.id, match.requirementId);
             return (
-              <div key={match.requirementId} className="rounded-[6px] border border-hairline bg-white/70 p-3">
+              <div key={match.requirementId} className="rounded-[7px] border border-hairline bg-white/72 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{requirement.label}</p>
+                  <p className="font-medium">{requirement.label}</p>
                   <StatusBadge status={match.status} />
                 </div>
-                <p className="mt-2 text-xs leading-5 text-graphite">{match.explanation}</p>
+                <p className="mt-2 text-sm leading-6 text-graphite">{match.explanation}</p>
               </div>
             );
           })}
+        </div>
+        <button
+          onClick={() => setStep(4)}
+          className="mt-6 inline-flex items-center gap-2 rounded-[6px] bg-ink px-5 py-4 text-sm font-medium text-white hover:bg-oxblood"
+        >
+          Generate proof-backed claims <ArrowRight className="h-4 w-4" />
+        </button>
+      </Panel>
+    </div>
+  );
+}
+
+function GeneratedClaimsScreen({
+  pack,
+  selectedClaimId,
+  setSelectedClaimId,
+  selectedBullet,
+  selectedRequirement,
+  selectedChain,
+  proofExperience,
+  job
+}: {
+  pack: ReturnType<typeof getApplicationPack>;
+  selectedClaimId: string;
+  setSelectedClaimId: (claimId: string) => void;
+  selectedBullet: ReturnType<typeof getApplicationPack>["proofBackedBullets"][number];
+  selectedRequirement: ReturnType<typeof getRequirement>;
+  selectedChain: ReturnType<typeof getApplicationPack>["claimProofChains"][number];
+  proofExperience: ExperienceCard;
+  job: ReturnType<typeof getJob>;
+}) {
+  return (
+    <div className="space-y-6">
+      <Panel className="p-6 md:p-8">
+        <SectionHeader
+          eyebrow="Generated claims"
+          title="The hero output is the proof chain"
+          copy={`Role-specific output for ${job.title}. The user sees the improved bullet and why it is defensible.`}
+        />
+        <div className="mb-5 flex flex-wrap gap-2">
+          {pack.claimProofChains.map((chain, index) => (
+            <button
+              key={chain.id}
+              onClick={() => setSelectedClaimId(chain.id)}
+              className={`rounded-[5px] border px-3 py-2 text-sm ${
+                selectedClaimId === chain.id ? "border-violet bg-violet text-white" : "border-hairline bg-white hover:border-violet"
+              }`}
+            >
+              Claim {index + 1}
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <ProofStep number="1" title="Claim" body={selectedBullet.text} footer="Generated resume bullet" tone="coral" />
+          <ProofStep number="2" title="Proof" body={selectedChain.proofDetail} footer={`${proofExperience.title} · ${proofExperience.sourceType}`} tone="cyan" />
+          <ProofStep number="3" title="Requirement" body={selectedRequirement.label} footer={selectedRequirement.sourcePhrase} tone="violet" />
+          <ProofStep number="4" title="Defense" body={selectedChain.defenseQuestion} footer={`Clarify first: ${selectedChain.clarificationQuestion}`} tone="amber" />
+        </div>
+      </Panel>
+
+      <Panel className="p-6 md:p-8">
+        <SectionHeader
+          eyebrow="Before / after"
+          title="Make the transformation impossible to miss"
+          copy="This should be the simplest pitch artifact: weak student wording becomes role-specific claims with proof links."
+        />
+        <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
+          <div className="rounded-[7px] border border-coral/20 bg-coral-soft p-5">
+            <p className="font-serif text-3xl">Before</p>
+            <div className="mt-4 space-y-3">
+              {pack.beforeAfter.weak.map((item) => (
+                <div key={item} className="rounded-[6px] border border-white/80 bg-white/64 p-4 text-sm text-graphite">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-[7px] border border-lime/35 bg-lime-soft p-5">
+            <p className="font-serif text-3xl">After</p>
+            <div className="mt-4 space-y-3">
+              {pack.beforeAfter.improved.map((item) => (
+                <div key={item.id} className="rounded-[6px] border border-white/80 bg-white/78 p-4">
+                  <p className="text-sm font-medium leading-6">{item.text}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {item.sourceExperienceIds.map((id) => (
+                      <SourceChip key={id}>{getExperience(id).title}</SourceChip>
+                    ))}
+                    {item.linkedRequirementIds.map((id) => (
+                      <SourceChip key={id}>{getRequirement(job.id, id).label}</SourceChip>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Panel>
     </div>
   );
 }
 
-function ClaimProofChain({
-  pack,
-  selectedClaimId,
-  setSelectedClaimId,
-  selectedBullet,
-  selectedExperience,
-  selectedRequirement,
-  selectedChain
-}: {
-  pack: ReturnType<typeof getApplicationPack>;
-  selectedClaimId: string;
-  setSelectedClaimId: (id: string) => void;
-  selectedBullet: ReturnType<typeof getApplicationPack>["proofBackedBullets"][number];
-  selectedExperience: ExperienceCard;
-  selectedRequirement: ReturnType<typeof getRequirement>;
-  selectedChain: ReturnType<typeof getApplicationPack>["claimProofChains"][number];
-}) {
-  return (
-    <Panel className="p-5 md:p-6">
-      <SectionHeader
-        eyebrow="Step 3"
-        title="Show the claim chain before showing the dashboard"
-        copy="This is the core product idea: every generated sentence has a visible path back to source evidence and a question the student must be ready to answer."
-      />
-      <div className="mb-5 flex flex-wrap gap-2">
-        {pack.claimProofChains.map((chain, index) => (
-          <button
-            key={chain.id}
-            onClick={() => setSelectedClaimId(chain.id)}
-            className={`rounded-[5px] border px-3 py-2 text-sm transition ${
-              selectedClaimId === chain.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white hover:border-oxblood"
-            }`}
-          >
-            Claim {index + 1}
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <ProofStep number="1" title="Claim" body={selectedBullet.text} footer="Generated resume bullet" />
-        <ProofStep
-          number="2"
-          title="Proof"
-          body={selectedChain.proofDetail}
-          footer={`${selectedExperience.title} · ${selectedExperience.sourceType}`}
-        />
-        <ProofStep number="3" title="Requirement" body={selectedRequirement.label} footer={selectedRequirement.sourcePhrase} />
-        <ProofStep
-          number="4"
-          title="Defense"
-          body={selectedChain.defenseQuestion}
-          footer={`Clarify first: ${selectedChain.clarificationQuestion}`}
-        />
-      </div>
-    </Panel>
-  );
-}
+function ProofStep({ number, title, body, footer, tone }: { number: string; title: string; body: string; footer: string; tone: "coral" | "cyan" | "violet" | "amber" }) {
+  const styles = {
+    coral: "border-coral/25 bg-coral-soft text-coral",
+    cyan: "border-cyan/25 bg-cyan-soft text-cyan",
+    violet: "border-violet/25 bg-violet-soft text-violet",
+    amber: "border-amber-300 bg-amber text-amber-ink"
+  };
 
-function ProofStep({ number, title, body, footer }: { number: string; title: string; body: string; footer: string }) {
   return (
-    <article className="rounded-[7px] border border-hairline bg-canvas p-5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-oxblood text-sm font-semibold text-white">{number}</span>
+    <article className={`rounded-[7px] border p-5 ${styles[tone]}`}>
+      <span className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-white text-sm font-semibold text-ink">{number}</span>
       <p className="mt-5 font-serif text-3xl">{title}</p>
-      <p className="mt-4 text-sm font-medium leading-6">{body}</p>
-      <p className="mt-5 border-t border-hairline pt-4 text-xs leading-5 text-graphite">{footer}</p>
+      <p className="mt-4 text-sm font-medium leading-6 text-ink">{body}</p>
+      <p className="mt-5 border-t border-white/80 pt-4 text-xs leading-5 text-graphite">{footer}</p>
     </article>
   );
 }
 
-function BeforeAfter({ pack, selectedJobTitle }: { pack: ReturnType<typeof getApplicationPack>; selectedJobTitle: string }) {
-  return (
-    <Panel className="p-5 md:p-6">
-      <SectionHeader
-        eyebrow="Step 4"
-        title="Make the output feel earned"
-        copy={`A role-specific resume view for ${selectedJobTitle}. The improved bullets are stronger because their proof links stay visible.`}
-      />
-      <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
-        <div className="rounded-[7px] border border-hairline bg-canvas p-5">
-          <p className="font-serif text-3xl">Before</p>
-          <div className="mt-5 space-y-3">
-            {pack.beforeAfter.weak.map((item) => (
-              <div key={item} className="rounded-[6px] border border-hairline bg-white/60 p-4 text-sm text-graphite">
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-[7px] border border-oxblood bg-white p-5">
-          <p className="font-serif text-3xl">After</p>
-          <div className="mt-5 space-y-3">
-            {pack.beforeAfter.improved.map((item) => (
-              <div key={item.id} className="rounded-[6px] border border-hairline bg-canvas p-4">
-                <p className="text-sm font-medium leading-6">{item.text}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {item.sourceExperienceIds.map((id) => (
-                    <SourceChip key={id}>{getExperience(id).title}</SourceChip>
-                  ))}
-                  {item.linkedRequirementIds.map((id) => (
-                    <SourceChip key={id}>{id}</SourceChip>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Panel>
-  );
-}
-
-function ProofLibrary({
-  cards,
-  selectedProof,
-  setSelectedProofId,
-  selectedJobId
-}: {
-  cards: SkillProofCard[];
-  selectedProof: SkillProofCard;
-  setSelectedProofId: (id: string) => void;
-  selectedJobId: string;
-}) {
-  const generatedBullet = getApplicationPack(selectedJobId).proofBackedBullets.find((bullet) => bullet.id === selectedProof.generatedBulletId);
-  const source = getExperience(selectedProof.sourceExperienceId);
-
-  return (
-    <Panel className="p-5 md:p-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">Proof library</p>
-          <h2 className="mt-2 font-serif text-4xl leading-none md:text-5xl">The dashboard only appears after the story is clear</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-graphite">
-            Browse the evidence objects that support claims. This is operational detail, so it should support the story rather than open the demo.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex min-w-[220px] items-center gap-2 rounded-[6px] border border-hairline bg-white px-3 py-2 text-sm text-graphite">
-            <Search className="h-4 w-4" /> Search proofs
-          </div>
-          <button className="rounded-[6px] border border-hairline bg-white p-2" aria-label="Filter proofs">
-            <Filter className="h-5 w-5" />
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-[6px] bg-oxblood px-4 py-2 text-sm text-white">
-            <Plus className="h-4 w-4" /> New proof
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-3">
-          {cards.map((card) => (
-            <button
-              key={card.id}
-              onClick={() => setSelectedProofId(card.id)}
-              className={`w-full rounded-[8px] border p-4 text-left transition hover:-translate-y-0.5 ${
-                selectedProof.id === card.id ? "border-oxblood bg-white shadow-panel" : "border-hairline bg-canvas hover:bg-white/80"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border border-hairline bg-white text-oxblood">
-                  <Database className="h-7 w-7" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-serif text-xl">{card.skillLabel}</p>
-                  <p className="text-sm text-graphite">{getExperience(card.sourceExperienceId).title}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {card.tags.map((tag) => (
-                      <Tag key={tag}>{tag}</Tag>
-                    ))}
-                  </div>
-                </div>
-                <StatusBadge status={card.status} />
-              </div>
-            </button>
-          ))}
-        </div>
-        <div className="rounded-[8px] border border-hairline bg-white p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-serif text-4xl leading-none">{selectedProof.skillLabel}</h3>
-              <div className="mt-4">
-                <StatusBadge status={selectedProof.status} />
-              </div>
-            </div>
-            <button className="inline-flex items-center gap-2 rounded-[6px] border border-hairline bg-white px-4 py-2 text-sm">
-              <Pencil className="h-4 w-4" /> Edit
-            </button>
-          </div>
-          <DetailBlock icon={<FileText />} label="Source experience">
-            <p className="font-medium">{source.title}</p>
-            <p className="text-graphite">
-              {source.date} · {source.sourceType}
-            </p>
-          </DetailBlock>
-          <DetailBlock icon={<ClipboardList />} label="Proof detail">
-            <p>{selectedProof.proofDetail}</p>
-          </DetailBlock>
-          <DetailBlock icon={<Sparkles />} label="Generated resume bullet">
-            <p>{generatedBullet?.text}</p>
-          </DetailBlock>
-          <DetailBlock icon={<MessageCircleQuestion />} label="Likely interview question">
-            <p>{selectedProof.interviewQuestion}</p>
-          </DetailBlock>
-        </div>
-      </div>
-    </Panel>
-  );
-}
-
-function DetailBlock({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="mt-6 border-t border-hairline pt-5">
-      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">
-        <span className="h-4 w-4">{icon}</span> {label}
-      </p>
-      <div className="text-sm leading-6">{children}</div>
-    </div>
-  );
-}
-
-function InterrogationAndLens({
+function SecondaryScreens({
   pack,
-  lensFrame,
   selectedJobId,
-  selectJob,
-  draftExperiences
+  selectedJobTitle,
+  lensFrame,
+  selectJob
 }: {
   pack: ReturnType<typeof getApplicationPack>;
-  lensFrame: ReturnType<typeof getLensFrame>;
   selectedJobId: string;
-  selectJob: (id: string) => void;
-  draftExperiences: ExperienceCard[];
+  selectedJobTitle: string;
+  lensFrame: ReturnType<typeof getLensFrame>;
+  selectJob: (jobId: string) => void;
 }) {
+  const firstProof = pack.skillProofCards[0];
+  const firstBullet = pack.proofBackedBullets.find((bullet) => bullet.id === firstProof.generatedBulletId);
+  const review = pack.recruiterReview;
+
   return (
-    <div className="mx-auto max-w-[1480px]">
-      <SectionHeader
-        eyebrow="Evidence gaps"
-        title="When proof is missing, ask for it"
-        copy="The app should not imply stronger claims than the student can defend. It asks targeted questions and shows how one source changes under different role lenses."
-      />
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-        <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Clarification prompts</h3>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {pack.interrogationPrompts.map((group) => {
-              const source = draftExperiences.find((experience) => experience.id === group.experienceId) ?? getExperience(group.experienceId);
-              return (
-                <div key={group.experienceId} className="rounded-[6px] border border-hairline bg-white/65 p-4">
-                  <p className="font-serif text-xl">{source.title}</p>
-                  <p className="mt-1 text-sm text-graphite">Current wording: {source.messyWording}</p>
-                  <ul className="mt-4 space-y-3 text-sm leading-6">
-                    {group.prompts.map((prompt) => (
-                      <li key={prompt} className="flex gap-2">
-                        <MessageCircleQuestion className="mt-1 h-4 w-4 shrink-0 text-oxblood" /> {prompt}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-        <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Switch lens</h3>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {jobs.map((job) => (
-              <button
-                key={job.id}
-                onClick={() => selectJob(job.id)}
-                className={`rounded-[5px] border px-3 py-2 text-sm transition ${
-                  selectedJobId === job.id ? "border-oxblood bg-oxblood text-white" : "border-hairline bg-white hover:border-oxblood"
-                }`}
-              >
-                {job.title}
-              </button>
-            ))}
-          </div>
-          <div className="mt-6 rounded-[6px] border border-hairline bg-canvas p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">{lensFrame.roleLabel}</p>
-            <p className="mt-4 font-serif text-2xl leading-snug">{lensFrame.reframedClaim}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
+    <section id="secondary" className="border-t border-hairline px-4 py-12 md:px-8 md:py-16">
+      <div className="mx-auto max-w-[1480px]">
+        <SectionHeader
+          eyebrow="Secondary screens"
+          title="Proof surfaces after the core flow"
+          copy="These views still matter, but they should support the guided demo instead of being the opening experience."
+        />
+        <div className="grid gap-6 xl:grid-cols-3">
+          <Panel className="p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <Layers3 className="h-5 w-5 text-cyan" />
+              <h3 className="font-serif text-3xl">Skill Proof Card</h3>
+            </div>
+            <StatusBadge status={firstProof.status} />
+            <p className="mt-4 font-medium">{firstProof.skillLabel}</p>
+            <p className="mt-2 text-sm leading-6 text-graphite">{firstProof.proofDetail}</p>
+            <p className="mt-4 border-t border-hairline pt-4 text-sm leading-6">{firstBullet?.text}</p>
+            <p className="mt-4 text-sm text-graphite">Interview: {firstProof.interviewQuestion}</p>
+          </Panel>
+
+          <Panel className="p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 text-violet" />
+              <h3 className="font-serif text-3xl">Switch Lens</h3>
+            </div>
+            <div className="mb-5 flex flex-wrap gap-2">
+              {jobs.map((job) => (
+                <button
+                  key={job.id}
+                  onClick={() => selectJob(job.id)}
+                  className={`rounded-[5px] border px-3 py-2 text-sm ${
+                    selectedJobId === job.id ? "border-violet bg-violet text-white" : "border-hairline bg-white hover:border-violet"
+                  }`}
+                >
+                  {job.title}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">{lensFrame.roleLabel}</p>
+            <p className="mt-3 font-serif text-2xl leading-snug">{lensFrame.reframedClaim}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
               {lensFrame.emphasis.map((item) => (
                 <Tag key={item}>{item}</Tag>
               ))}
             </div>
-            <p className="mt-5 text-sm text-graphite">Same source: {getExperience(lensFrame.sourceExperienceId).title}</p>
-          </div>
-          <div className="mt-5 text-sm text-graphite">
-            {switchLensFrames.length} role lenses are hardcoded for the same underlying student evidence.
-          </div>
-        </Panel>
+          </Panel>
+
+          <Panel className="p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <Search className="h-5 w-5 text-oxblood" />
+              <h3 className="font-serif text-3xl">Recruiter Review</h3>
+            </div>
+            <p className="text-sm leading-6 text-graphite">{review.candidateSummary}</p>
+            <SignalList title="Strongest supported skills" items={review.signalSummary.strongestSupportedSkills} />
+            <SignalList title="Needs clarification" items={review.signalSummary.skillsNeedingClarification} />
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-graphite">
+              No score, ranking, or hiring recommendation for {selectedJobTitle}
+            </p>
+          </Panel>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function RecruiterReview({ selectedJobId, pack }: { selectedJobId: string; pack: ReturnType<typeof getApplicationPack> }) {
-  const review = pack.recruiterReview;
-  return (
-    <div className="mx-auto max-w-[1480px]">
-      <SectionHeader
-        eyebrow="Step 5"
-        title="Recruiter review stays evidence-based"
-        copy="This view explains what can be verified, what still needs clarification, and which requirements are covered. It avoids rankings, hiring recommendations, and fake readiness scores."
-      />
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-        <Panel className="p-6">
-          <h3 className="font-serif text-3xl">{getJob(selectedJobId).title} profile review</h3>
-          <p className="mt-4 text-sm leading-6 text-graphite">{review.candidateSummary}</p>
-          <div className="mt-6 space-y-4">
-            {review.bulletEvidenceLinks.map((link) => {
-              const bullet = pack.proofBackedBullets.find((item) => item.id === link.bulletId);
-              const source = getExperience(link.sourceExperienceId);
-              const requirement = getRequirement(selectedJobId, link.requirementId);
-              return (
-                <div key={link.bulletId} className="rounded-[6px] border border-hairline bg-white/70 p-4">
-                  <p className="text-sm font-medium leading-6">{bullet?.text}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <SourceChip>{source.title}</SourceChip>
-                    <SourceChip>{requirement.label}</SourceChip>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-graphite">{link.reviewerNote}</p>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-        <Panel className="p-6">
-          <h3 className="font-serif text-3xl">Signal summary</h3>
-          <SignalGroup title="Strongest supported skills" items={review.signalSummary.strongestSupportedSkills} />
-          <SignalGroup title="Skills needing clarification" items={review.signalSummary.skillsNeedingClarification} />
-          <SignalGroup title="Experience sources used" items={review.signalSummary.experienceSourcesUsed} />
-          <SignalGroup title="Requirements covered by evidence" items={review.signalSummary.requirementsCoveredByEvidence} />
-        </Panel>
-      </div>
-    </div>
-  );
-}
-
-function SignalGroup({ title, items }: { title: string; items: string[] }) {
+function SignalList({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="mt-6 border-t border-hairline pt-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-oxblood">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-graphite">{title}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {items.map((item) => (
           <Tag key={item}>{item}</Tag>

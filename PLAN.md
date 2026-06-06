@@ -1,187 +1,253 @@
-# SkillProof Next.js Demo Plan
+# SkillProof Prototype Plan
 
-## Summary
+## Product Point
 
-Build a polished Next.js + React + TypeScript + Tailwind demo for **SkillProof**, a proof-backed application tool for students.
+SkillProof is a proof-backed application tool for students and fresh graduates.
 
-SkillProof turns vague academic, part-time, and club experience into defensible resume claims by showing the proof and employer requirement behind every bullet.
+It turns vague student experience into defensible resume claims by connecting every generated bullet to:
+- a source experience,
+- a matched employer requirement,
+- a proof detail,
+- a clarification question,
+- an interview defense question.
 
-Core thesis:
+The prototype should make the core flow obvious before showing dashboards or secondary proof views.
 
-> Students do not always lack experience. They often lack the language and proof structure to show how their experience maps to what employers actually ask for.
+## Prototype Principle
 
-Startup wedge:
+This is not a full product build.
 
-> Do not compete as a generic AI resume builder. Own the narrower claim-proof workflow: every resume claim should have a source, a matched requirement, and a defense question.
+The prototype must demonstrate the different demo flows clearly:
+1. A student starts with messy experience.
+2. The student chooses or pastes a target job.
+3. SkillProof analyzes the experience against employer language.
+4. SkillProof recommends proof-backed resume claims.
+5. The student sees what is supported, what needs detail, and how to defend the claim.
 
-Selected hackathon modules:
-- **Living Portfolio**: store student experiences as reusable Experience Cards.
-- **Adaptive Readiness Profile**: show role coverage using careful labels, not fake scores.
-- **Custom module: Employer-Language Translator**: parse job requirements and translate student experience into employer-facing resume language.
-- **Supporting module: Career Path Navigator**: lightly supported through Switch Lens, showing how the same experience can be reframed for different roles.
+V1 remains a static interactive mock:
+- no backend,
+- no API routes,
+- no database,
+- no real AI call,
+- deterministic local data and simulated AI output,
+- clickable enough to explain the product in a pitch.
 
-V1 is an **interactive mock**, not real AI:
-- No backend.
-- No API routes.
-- No database.
-- Static deterministic logic and seeded examples.
-- Key flows clickable; the whole product does not need to be fully implemented.
+## Primary Screens
 
-## Key Product Flow
+These screens are the most important. They should appear first and form the main prototype path.
 
-The demo centers on a Malaysian fresh-grad/student scenario.
+### 1. Overall Start Screen
 
-Main user journey:
-1. Student lands on SkillProof and sees the concept: “Turn vague student experience into proof-backed resume claims.”
-2. Student enters or edits experiences from:
-   - Coursework/group assignments.
-   - Part-time work.
-   - Clubs/events.
-3. Student chooses or pastes a job post.
-   - Include seeded roles such as Marketing Intern, Business Analyst Intern, and Management Trainee.
-4. SkillProof extracts employer requirements from the selected job post using static rules.
-5. SkillProof drafts role-specific resume claims.
-6. Student opens each claim and sees the full proof chain:
-   - source experience,
-   - employer requirement matched,
-   - proof detail,
-   - clarification question,
-   - interview defense prompt.
-7. The app maps student experiences to job requirements with careful labels:
-   - Direct match.
-   - Possible match.
-   - Needs detail.
-   - Not shown.
-8. The hero output is **Claim -> Proof -> Requirement -> Defense**:
-   - the generated resume bullet,
-   - the source experience that supports it,
-   - the job requirement it maps to,
-   - the question the student must be ready to answer.
-9. The secondary output is **Before/After Resume View**:
-   - weak original wording,
-   - improved role-specific resume bullets,
-   - the proof behind each claim.
-10. Student sees **Experience Interrogation** prompts:
-   - short follow-up questions that ask for missing proof before the app generates stronger claims.
-11. Student sees **Skill Proof Cards**:
-   - skill name,
-   - source experience,
-   - proof detail,
-   - generated resume bullet,
-   - likely interview question.
-12. Student can use **Switch Lens** as a supporting feature:
-   - see the same experience reframed for different roles such as Marketing Intern, Business Analyst Intern, and Management Trainee.
-13. The generated outputs include:
-   - proof-backed resume bullets,
-   - Skill Proof Cards,
-   - Claim Defense Questions,
-   - Requirement Coverage Map.
-14. Recruiter Proof Review inspects the generated candidate profile.
-   - Recruiter sees each resume bullet linked back to source experience and job requirement.
-   - Recruiter sees a careful signal summary of strongest supported skills, skills needing clarification, and experience sources used.
-   - No ranked candidate matching, pipeline, ATS score, or hiring recommendation in V1.
+Purpose:
+- Explain SkillProof in one screen.
+- Show the basic promise: messy student experience -> proof-backed resume claims.
+- Make the next action obvious.
 
-## Implementation Changes
+Content:
+- Product name: SkillProof.
+- One-line promise: "Turn messy student experience into proof-backed resume claims."
+- Short explanation: students often have evidence, but not the structure or language to map it to job requirements.
+- Primary action: start the guided demo.
 
-Scaffold a Next.js app from this plan.
+Must avoid:
+- Opening directly on dashboards.
+- Showing recruiter review before the student flow is understood.
+- Overloading the user with all modules at once.
 
-Use:
-- Next.js App Router.
-- TypeScript.
-- Tailwind CSS.
-- React client components for the interactive demo.
-- Static local data and `useState` for demo state.
+### 2. Paste Experience Screen
 
-Recommended structure:
-- `src/app/page.tsx`: landing page plus embedded demo sections.
-- `src/components/`: hero, module stack, demo workspace, experience cards, job post panel, mapping board, claim proof chain, before/after resume view, skill proof cards, recruiter proof review, optional switch lens control.
-- `src/lib/demoData.ts`: seeded student experiences, sample jobs, requirements, and output examples.
-- `src/lib/skillproof.ts`: static mapping/generation functions.
-- `src/types/skillproof.ts`: shared TypeScript types.
+Purpose:
+- Show the student input moment.
+- Make it obvious that the product starts from messy real wording.
 
-Core types:
-- `ExperienceCard`: source type, title, raw description, extracted signals, evidence notes.
-- `JobPost`: title, company, description, requirements.
-- `Requirement`: label, category, source phrase.
-- `RequirementMatch`: requirement, matched experience ids, status label, explanation.
-- `ResumeBullet`: bullet text, source experience ids, linked requirement ids.
-- `SkillProofCard`: skill label, source experience id, proof detail, generated bullet id, interview question.
-- `ClaimProofChain`: generated bullet id, source experience id, linked requirement id, proof detail, clarification question, defense question.
-- `ApplicationPack`: proof-backed bullets, skill proof cards, claim defense questions, requirement coverage map.
-- `RecruiterReviewProfile`: candidate summary, bullet evidence links, requirement coverage, signal summary.
+User action:
+- Paste or edit weak experience wording.
+- Optionally choose source type: coursework, part-time work, club/event.
 
-UI direction:
-- Editorial Career OS tone.
-- Premium, serious, readable, not playful or generic.
-- Use strong typography, restrained colors, structured panels, and clear before/after transformation.
-- Avoid fake precision like “87% ready.”
-- Avoid generic chatbot UI as the main experience.
-- Make SkillProof feel like a proof system, not an AI writing assistant.
-- Do not market or design SkillProof as an ATS optimizer, resume template builder, generic AI career coach, job marketplace, or talent matching platform.
+Seeded examples:
+- "Did group assignment about GrabFood."
+- "Worked part-time at cafe."
+- "Helped with club event."
 
-## Demo Content
+Displayed output:
+- Detected signals such as research, customer handling, coordination, communication.
+- Proof hints such as survey responses, POS handling, vendor messages, participant count.
 
-Seed one main student:
-- Malaysian final-year student/fresh grad.
-- Experiences include:
-  - Marketing/coursework group assignment.
-  - Part-time customer-facing work.
-  - Club/event coordination.
+### 3. Target Job Screen
 
-Seed job examples:
+Purpose:
+- Show that SkillProof rewrites against employer requirements, not generic resume advice.
+
+User action:
+- Choose a seeded role or paste a job post.
+
+Seeded roles:
 - Marketing Intern.
 - Business Analyst Intern.
 - Management Trainee.
 
-The demo should visibly transform weak student wording like:
-- “Did group assignment about GrabFood.”
-- “Helped with club event.”
-- “Worked part-time at cafe.”
+Displayed output:
+- Job requirements extracted from the selected role.
+- Requirement language shown plainly.
+- If paste is included, it can be a mock textarea with deterministic "AI extracted" output.
 
-Into role-specific outputs like:
-- “Conducted student survey research to identify food delivery behavior patterns and presented marketing recommendations.”
-- “Coordinated event logistics and vendor communication for a student club activity.”
-- “Handled customer requests in a fast-paced service environment while maintaining transaction accuracy.”
+### 4. AI Recommendation Screen
 
-The main demo should make the proof chain visible:
-- Resume claim.
-- Source experience.
-- Employer requirement.
+Purpose:
+- Show the simulated AI analysis and recommendation step.
+
+Displayed output:
+- Experience signals found.
+- Employer requirements found.
+- Match status using careful labels:
+  - Direct match.
+  - Possible match.
+  - Needs detail.
+  - Not shown.
+- Missing-proof questions before stronger claims are generated.
+
+Must avoid:
+- Fake readiness percentages.
+- ATS scores.
+- Hiring predictions.
+- Ranking or matching candidates.
+
+### 5. Generated Claims Screen
+
+Purpose:
+- Show the core product outcome.
+
+Displayed output:
+- Before/after resume transformation.
+- Generated proof-backed resume bullets.
+- For each selected bullet:
+  - Claim.
+  - Proof.
+  - Requirement.
+  - Defense.
 - Clarification question.
 - Interview defense question.
 
-The demo can also show the same experience through **Switch Lens**:
-- Marketing Intern lens: customer research, campaign insight, presentation.
-- Business Analyst Intern lens: survey analysis, pattern finding, data interpretation.
-- Management Trainee lens: coordination, communication, structured problem solving.
+This is the hero product moment.
 
-Experience Interrogation prompts should ask for details such as:
+## Secondary Screens
+
+These screens support the prototype but should appear after the primary flow or in a secondary section.
+
+### Skill Proof Cards
+
+Purpose:
+- Store reusable proof objects for the student.
+
+Content:
+- Skill label.
+- Source experience.
+- Proof detail.
+- Generated bullet.
+- Likely interview question.
+
+### Requirement Coverage Map
+
+Purpose:
+- Show role coverage carefully without scores.
+
+Content:
+- Direct match.
+- Possible match.
+- Needs detail.
+- Not shown.
+- Explanation for each requirement.
+
+### Experience Interrogation Prompts
+
+Purpose:
+- Ask for missing proof before overclaiming.
+
+Prompt examples:
 - What did you personally do?
 - How many people, data points, customers, or participants were involved?
 - What tool, method, or process did you use?
 - What recommendation, output, or result came from the work?
 
-Recruiter signal summary should avoid scores and use careful categories:
+### Switch Lens
+
+Purpose:
+- Show how the same experience can be reframed for different roles.
+
+Lenses:
+- Marketing Intern: customer research, campaign insight, presentation.
+- Business Analyst Intern: survey analysis, pattern finding, data interpretation.
+- Management Trainee: coordination, communication, structured problem solving.
+
+### Recruiter Proof Review
+
+Purpose:
+- Show how a recruiter can inspect evidence behind claims.
+
+Content:
+- Candidate summary.
+- Resume bullets linked to source experience and requirement.
 - Strongest supported skills.
 - Skills needing clarification.
 - Experience sources used.
 - Requirements covered by evidence.
 
+Must avoid:
+- Candidate ranking.
+- Hiring recommendation.
+- ATS score.
+- Pipeline or marketplace behavior.
+
+## Demo Data
+
+Use one Malaysian final-year student or fresh graduate.
+
+Experience sources:
+- Marketing/coursework group assignment.
+- Part-time customer-facing work.
+- Club/event coordination.
+
+The main transformation should visibly convert weak wording into role-specific claims:
+- "Did group assignment about GrabFood." -> "Conducted student survey research on food delivery behaviour and translated 120 responses into campaign recommendations."
+- "Helped with club event." -> "Coordinated vendor communication and registration flow for an 80-participant business society orientation event."
+- "Worked part-time at cafe." -> "Handled customer requests during weekend rush periods while maintaining payment accuracy and clear shift handovers."
+
+## Implementation Direction
+
+Use:
+- Next.js App Router.
+- React client components.
+- TypeScript.
+- Tailwind CSS.
+- Static local data.
+- `useState` for the guided prototype state.
+
+Recommended structure:
+- `src/app/page.tsx`: simple landing/product overview.
+- `src/app/demo/page.tsx`: interactive guided prototype.
+- `src/components/SkillProofDemo.tsx`: primary and secondary demo flows.
+- `src/lib/demoData.ts`: seeded experiences, jobs, requirements, generated outputs.
+- `src/lib/skillproof.ts`: deterministic lookup and simulated analysis helpers.
+- `src/types/skillproof.ts`: shared types.
+
 ## MVP Priority
 
-Must-have:
-- Messy experience input.
-- Job requirement extraction.
-- Claim -> Proof -> Requirement -> Defense view.
-- Before/After Resume View.
+Primary must-have:
+- Overall start screen.
+- Paste/edit experience screen.
+- Choose/paste job screen.
+- Simulated AI recommendation screen.
+- Generated claims screen with Claim -> Proof -> Requirement -> Defense.
+
+Secondary must-have:
 - Skill Proof Cards.
-- Experience Interrogation prompts.
 - Requirement Coverage Map.
+- Experience Interrogation prompts.
 - Recruiter Proof Review.
 
 Nice-to-have:
 - Switch Lens.
-- Suggested skills section.
+- Suggested skills.
 - Full landing page storytelling.
 
 Cut for V1:
@@ -193,33 +259,17 @@ Cut for V1:
 - Talent matching.
 - Broad application pack.
 
-## Test Plan
+## Manual Acceptance Checks
 
-Manual acceptance checks:
-- Landing page clearly explains SkillProof in under 10 seconds.
-- Student can edit/select experiences and choose a sample job post.
-- Mapping board updates based on selected job.
-- Claim proof chain links each generated bullet to source experience, employer requirement, clarification question, and defense question.
-- Before/after resume view makes the transformation obvious.
-- Experience Interrogation prompts appear for vague experience cards.
-- Skill Proof Cards link skills to source experience, resume bullet, and interview question.
-- Resume output is role-specific and linked to student experience.
-- Recruiter Proof Review shows evidence behind generated bullets and a careful signal summary.
-- Switch Lens changes how at least one experience is reframed across roles if included.
-- UI works on desktop and mobile widths.
-- No UI claims verification, prediction, or hiring recommendation.
-- No broken navigation for the key demo path.
-
-Build checks:
-- `npm run lint` if configured.
-- `npm run build`.
-- Run local dev server and verify the main flow in browser.
-
-## Assumptions
-
-- The demo is for hackathon pitching, not production use.
-- Static logic is acceptable for V1; no AI integration boundary is planned yet.
-- Recruiter Proof Review is an evidence review surface, not Smart Talent Matching.
-- Universities are not a V1 user surface; do not add a university dashboard unless the concept is later expanded.
-- The product should be web-first and responsive.
-- The app should prioritize the proof-backed resume transformation over complete platform navigation.
+- A developer can understand the core product flow from the first screen.
+- The prototype starts with user input, not a dashboard.
+- Student can edit messy experience wording.
+- Student can choose a seeded job role.
+- A paste-job affordance is visible even if deterministic.
+- The recommendation screen shows simulated analysis and careful match labels.
+- The generated claims screen makes the before/after transformation obvious.
+- Claim -> Proof -> Requirement -> Defense is visible for the selected claim.
+- Secondary proof views are present but do not dominate the opening.
+- No UI claims verification, prediction, ATS scoring, ranking, or hiring recommendation.
+- `npm run lint` passes.
+- `npm run build` passes.

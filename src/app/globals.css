@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #fbf8f1;
+  --canvas: #fffaf2;
   --ink: #11100e;
   --graphite: #4d4944;
-  --hairline: #e1d7ca;
+  --hairline: #eaded2;
   --oxblood: #850019;
 }
 
@@ -22,8 +22,10 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 18% 0%, rgba(133, 0, 25, 0.08), transparent 26rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 18rem),
+    radial-gradient(circle at 10% 4%, rgba(255, 91, 91, 0.18), transparent 22rem),
+    radial-gradient(circle at 88% 0%, rgba(109, 76, 255, 0.18), transparent 24rem),
+    radial-gradient(circle at 78% 42%, rgba(0, 167, 200, 0.12), transparent 24rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 20rem),
     var(--canvas);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -38,7 +40,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(133, 0, 25, 0.16);
+  background: rgba(109, 76, 255, 0.18);
 }
 
 a,
@@ -55,6 +57,6 @@ textarea {
 a:focus-visible,
 button:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgba(133, 0, 25, 0.45);
+  outline: 2px solid rgba(109, 76, 255, 0.5);
   outline-offset: 3px;
 }

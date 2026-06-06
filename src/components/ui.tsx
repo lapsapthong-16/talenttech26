@@ -35,7 +35,7 @@ export function StatusBadge({ status }: { status: MatchStatus }) {
 }
 
 export function Tag({ children }: { children: ReactNode }) {
-  return <span className="rounded-[5px] border border-hairline bg-white/80 px-2 py-1 text-xs text-graphite">{children}</span>;
+  return <span className="rounded-[5px] border border-violet/15 bg-violet-soft px-2 py-1 text-xs font-medium text-violet">{children}</span>;
 }
 
 export function SectionHeader({
@@ -49,7 +49,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="mb-7 border-b border-hairline pb-5">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-oxblood">{eyebrow}</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan">{eyebrow}</p>
       <h2 className="font-serif text-4xl leading-none text-ink md:text-5xl">{title}</h2>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-graphite md:text-base">{copy}</p>
     </div>
@@ -63,12 +63,12 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`rounded-[8px] border border-hairline bg-white/64 shadow-[0_1px_0_rgba(255,255,255,0.72)_inset] ${className}`}>{children}</div>;
+  return <div className={`rounded-[8px] border border-hairline bg-white/76 shadow-[0_1px_0_rgba(255,255,255,0.82)_inset] ${className}`}>{children}</div>;
 }
 
 export function SourceChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-[5px] border border-hairline bg-canvas px-2.5 py-1 text-xs text-graphite">
+    <span className="inline-flex items-center gap-1 rounded-[5px] border border-cyan/20 bg-cyan-soft px-2.5 py-1 text-xs font-medium text-cyan">
       {children}
     </span>
   );
